@@ -1,0 +1,56 @@
+Source: python-pyeclib
+Section: python
+Priority: optional
+Maintainer: PKG OpenStack <openstack-devel@lists.alioth.debian.org>
+Uploaders: Julien Danjou <acid@debian.org>,
+           Thomas Goirand <zigo@debian.org>,
+           Mehdi Abaakouk <sileht@sileht.net>,
+           Gonéri Le Bouder <goneri@debian.org>
+Build-Depends: debhelper (>= 9),
+               python-all (>= 2.6.6-3~),
+               python-setuptools,
+               python3-all,
+               python3-setuptools,
+               libgf-complete-dev
+Standards-Version: 3.9.5
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/python-pyeclib.git
+Vcs-Git: git://anonscm.debian.org/openstack/python-pyeclib.git
+Homepage: https://bitbucket.org/kmgreen2/pyeclib
+
+Package: python-pyeclib
+Architecture: any
+Pre-Depends: dpkg (>= 1.15.6~)
+Depends: ${misc:Depends}, ${python:Depends}
+Description: interface for implementing erasure codes - Python 2.x
+ This library provides a simple Python interface for implementing erasure
+ codes. To obtain the best possible performance, the underlying erasure code
+ algorithms are written in C.
+ .
+ This library makes use of Jerasure for Reed-Solomon and provides its own flat
+ XOR-based erasure code encoder and decoder. Currently, it implements a
+ specific class of HD Combination Codes (see "Flat XOR-based erasure codes in
+ storage systems: Constructions, efficient recovery, and tradeoffs" in IEEE
+ MSST 2010). These codes are well-suited to archival use-cases, have a simple
+ construction and require a minimum number of participating disks during
+ single-disk reconstruction (think XOR-based LRC code).
+ .
+ This package contains the Python 2.x module.
+
+Package: python3-pyeclib
+Architecture: any
+Pre-Depends: dpkg (>= 1.15.6~)
+Depends: ${misc:Depends}, ${python3:Depends}
+Description: interface for implementing erasure codes - Python 3.x
+ This library provides a simple Python interface for implementing erasure
+ codes. To obtain the best possible performance, the underlying erasure code
+ algorithms are written in C.
+ .
+ This library makes use of Jerasure for Reed-Solomon and provides its own flat
+ XOR-based erasure code encoder and decoder. Currently, it implements a
+ specific class of HD Combination Codes (see "Flat XOR-based erasure codes in
+ storage systems: Constructions, efficient recovery, and tradeoffs" in IEEE
+ MSST 2010). These codes are well-suited to archival use-cases, have a simple
+ construction and require a minimum number of participating disks during
+ single-disk reconstruction (think XOR-based LRC code).
+ .
+ This package contains the Python 3.x module.
