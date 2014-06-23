@@ -385,7 +385,7 @@ static void decode_three_data(xor_code_t *code_desc, char **data, char **parity,
   int parity_index = -1;
   int data_index = -1;
   int parity_bm = -1;
-  char *parity_buffer;
+  char *parity_buffer = NULL;
 
   /*
    * Try to find a parity that only contains 
@@ -452,10 +452,15 @@ static void decode_three_data(xor_code_t *code_desc, char **data, char **parity,
      fprintf(stderr, "Shit is broken, cannot construct equations to repair 3 failures!!!\n");
       exit(2);
     }
+    // Copy the appropriate parity into the data buffer
+    fast_memcpy(data[data_index], parity_buffer, blocksize);
+    // Free up the buffer we allocated above
+    aligned_free(parity_buffer);
+  } else {
+    // Copy the appropriate parity into the data buffer
+    fast_memcpy(data[data_index], parity_buffer, blocksize);
   }
 
-  // Copy the appropriate parity into the data buffer
-  fast_memcpy(data[data_index], parity_buffer, blocksize);
   
   for (i=0; i < code_desc->k; i++) {
     if (i != data_index && is_data_in_parity(i, parity_bm)) {
@@ -502,10 +507,9 @@ void xor_hd_decode(xor_code_t *code_desc, char **data, char **parity, int *missi
       int *missing_parity = get_missing_parity(code_desc, missing_idxs);
       decode_one_data(code_desc, data, parity, missing_data, missing_parity, blocksize);
       if (decode_parity) {
-        int *missing_parity = get_missing_parity(code_desc, missing_idxs);
         selective_encode(code_desc, data, parity, missing_parity, blocksize);
-        free(missing_parity);
       }
+      free(missing_parity);
       free(missing_data);
       break;
     }
@@ -515,11 +519,10 @@ void xor_hd_decode(xor_code_t *code_desc, char **data, char **parity, int *missi
       int *missing_parity = get_missing_parity(code_desc, missing_idxs);
       decode_one_data(code_desc, data, parity, missing_data, missing_parity, blocksize);
       if (decode_parity) {
-        int *missing_parity = get_missing_parity(code_desc, missing_idxs);
         selective_encode(code_desc, data, parity, missing_parity, blocksize);
-        free(missing_parity);
       }
       free(missing_data);
+      free(missing_parity);
       break;
     }
     case FAIL_PATTERN_2D_1P: 
@@ -528,10 +531,9 @@ void xor_hd_decode(xor_code_t *code_desc, char **data, char **parity, int *missi
       int *missing_parity = get_missing_parity(code_desc, missing_idxs);
       decode_two_data(code_desc, data, parity, missing_data, missing_parity, blocksize);
       if (decode_parity) {
-        int *missing_parity = get_missing_parity(code_desc, missing_idxs);
         selective_encode(code_desc, data, parity, missing_parity, blocksize);
-        free(missing_parity);
       }
+      free(missing_parity);
       free(missing_data);
       break;
     }

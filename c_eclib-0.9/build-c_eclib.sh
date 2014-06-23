@@ -2,6 +2,14 @@
 
 # These directory stack functions are based upon the versions in the Korn
 # Shell documentation - http://docstore.mik.ua/orelly/unix3/korn/ch04_07.htm.
+
+exit_if_error() {
+  if [ $? -ne 0 ]; then
+    echo "ERROR in $0"
+    exit
+  fi
+}
+
 dirs() {
   echo "$_DIRSTACK"
 }
@@ -37,6 +45,7 @@ download() {
   else
     ${CURL_PROG} -O ${pkgurl}
   fi
+  exit_if_error
 }
 
 realpath() {
@@ -150,6 +159,12 @@ for lib in ${LIB_ORDER}; do
       export DYLD_LIBRARY_PATH=${LIBDIR}
     else
       export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}":"${LIBDIR}
+    fi
+  else
+    if [ -z ${LD_LIBRARY_PATH} ]; then
+      export LD_LIBRARY_PATH=${LIBDIR}
+    else
+      export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}":"${LIBDIR}
     fi
   fi
 
