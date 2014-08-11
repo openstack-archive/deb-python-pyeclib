@@ -42,8 +42,8 @@ class ECPyECLibException(Exception):
 class ECPyECLibDriver(object):
 
     def __init__(self, k, m, ec_type, chksum_type="none"):
-        self.ec_rs_vand = "rs_vand"
-        self.ec_rs_cauchy_orig = "rs_cauchy_orig"
+        self.ec_rs_vand = "jerasure_rs_vand"
+        self.ec_rs_cauchy_orig = "jerasure_rs_cauchy_orig"
         self.ec_flat_xor_3 = "flat_xor_3"
         self.ec_flat_xor_4 = "flat_xor_4"
         self.chksum_none = "none"
@@ -184,6 +184,10 @@ class ECPyECLibDriver(object):
         return pyeclib_c.get_required_fragments(
             self.handle, missing_fragment_indexes)
 
+    def min_parity_fragments_needed(self):
+        """ FIXME - fix this to return a function of HD """
+        return 1
+
     def get_metadata(self, fragment):
         return pyeclib_c.get_metadata(self.handle, fragment)
 
@@ -220,6 +224,9 @@ class ECNullDriver(object):
         pass
 
     def get_segment_info(self, data_len, segment_size):
+        pass
+
+    def min_parity_fragments_needed(self):
         pass
 
 
@@ -330,4 +337,7 @@ class ECStripingDriver(object):
         return True
 
     def get_segment_info(self, data_len, segment_size):
+        pass
+
+    def min_parity_fragments_needed(self):
         pass
