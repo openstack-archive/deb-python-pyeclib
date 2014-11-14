@@ -1,5 +1,5 @@
 python-pyeclib (0.9.10-1) unstable; urgency=low
 
-  * Initial release. (Closes: #XXXXXX)
+  * Initial release. (Closes: #769519)
 
  -- Thomas Goirand <zigo@debian.org>  Sat, 24 May 2014 17:21:07 +0800
