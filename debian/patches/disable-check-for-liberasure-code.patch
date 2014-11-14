@@ -1,0 +1,20 @@
+Description: Disable check for liberasurecode
+ Upstream is using a naive way to check if the liberasurecode.so is present on
+ the system (eg, it only checks in /usr/lib, which of course fails in a
+ multiarch system). One could spend hours trying to fix, but I decided to
+ simply remove the check. After all, we have a build-depends for a reason...
+Author: Thomas Goirand <zigo@debian.org>
+Forwarded: no
+Last-Update: 2014-11-14
+
+--- python-pyeclib-0.9.10.orig/setup.py
++++ python-pyeclib-0.9.10/setup.py
+@@ -86,7 +86,7 @@ class build(_build):
+             sys.exit(1)
+ 
+     def run(self):
+-        self.check_liberasure()
++        #self.check_liberasure()
+         _build.run(self)
+ 
+ 
