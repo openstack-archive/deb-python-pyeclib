@@ -1,4 +1,6 @@
-/* * Copyright (c) 2013, Kevin Greenan (kmgreen2@gmail.com)
+/* 
+ * Copyright (c) 2013-2014, Kevin Greenan (kmgreen2@gmail.com)
+ * Copyright (c) 2014, Tushar Gohad (tusharsg@gmail.com)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,69 +27,17 @@
 #ifndef __PYEC_LIB_C_H_
 #define __PYEC_LIB_C_H_
 
-typedef enum { PYECC_RS_VAND, PYECC_RS_CAUCHY_ORIG, PYECC_XOR_HD_4, PYECC_XOR_HD_3, PYECC_NUM_TYPES, PYECC_NOT_FOUND } pyeclib_type_t;
-
-const char *pyeclib_type_str[] = { "jerasure_rs_vand", "jerasure_rs_cauchy_orig", "flat_xor_4", "flat_xor_3" };
-const int pyeclib_type_word_size_bytes[] = { sizeof(long), sizeof(long), sizeof(long), sizeof(long) };
-
-// Unconditionally enforce alignment for now...  This is needed for the SIMD extentions.
-// TODO (kmg): Parse cpuinfo and determine if it is necessary...
-const int pyeclib_type_needs_addr_align[] = { 1, 1, 1, 1 };
-
-#define PYECC_FLAGS_MASK          0x1
-#define PYECC_FLAGS_READ_VERIFY   0x1
-#define PYECC_HANDLE_NAME "pyeclib_handle"
-#define PYECC_HEADER_MAGIC  0xb0c5ecc
-#define PYECC_CAUCHY_PACKETSIZE sizeof(long) * 128
-#define PYECC_MAX_DATA 32
-#define PYECC_MAX_PARITY 32
-
-#define PYCC_MAX_SIG_LEN 8
-
-/*
- * Prevent the compiler from padding
- * this by using the __packed__ keyword
- */
-typedef struct __attribute__((__packed__)) fragment_header_s
-{
-  int magic;
-  int idx;
-  int size;
-  int orig_data_size;
-  int chksum;
-  // We must be aligned to 16-byte boundaries
-  // So, size this array accordingly
-  int aligned_padding[3];
-} fragment_header_t;
-
-typedef struct fragment_metadata_s
-{
-  int  size;
-  int  idx;
-  char signature[PYCC_MAX_SIG_LEN];
-  int chksum_mismatch;
-} fragment_metadata_t;
+/* For exact-width integer types */
+#include <stdint.h>
 
 typedef struct pyeclib_s
 {
-  int k;
-  int m;
-  int w;
-  int *matrix;
-  int *bitmatrix;
-  int **schedule;
-  xor_code_t *xor_code_desc;
-  alg_sig_t  *alg_sig_desc;
-  pyeclib_type_t type;
-  int inline_chksum;
-  int algsig_chksum;
+  int             ec_desc;
+  struct ec_args  ec_args;
 } pyeclib_t;
 
-#define FRAGSIZE_2_BLOCKSIZE(fragment_size) (fragment_size - sizeof(fragment_header_t))
 
-#define PYECLIB_WORD_SIZE(type) pyeclib_type_word_size_bytes[type]
-
-#define PYECLIB_NEEDS_ADDR_ALIGNMENT(type) pyeclib_type_needs_addr_align[type]
+#define PYECC_HANDLE_NAME           "pyeclib_handle"
 
 #endif
 

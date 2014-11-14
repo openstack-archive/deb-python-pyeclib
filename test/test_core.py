@@ -26,88 +26,12 @@ import os
 import sys
 import unittest
 
-
 run_under_valgrind = False
 test_cmd_prefix = ""
 log_filename_prefix = ""
 
 
-# skipUnless added in Python 2.7;
-try:
-    from unittest import skipUnless
-except ImportError:
-    def skipUnless(condition, message):
-        def decorator(testfunc):
-            @wraps(testfunc)
-            def wrapper(self):
-                if condition:
-                    testfunc(self)
-                else:
-                    print "Skipping", testfunc.__name__, "--", message
-            return wrapper
-        return decorator
-
-
-#
-# TestCoreC Test Configuration
-#
-xor_code_test = "test_xor_hd_code"
-alg_sig_test = "alg_sig_test"
-c_tests = [
-    xor_code_test,
-    alg_sig_test,
-]
-
-
-def SearchPath(name, path=None, exts=('',)):
-    """Search PATH for a binary.
-
-    Args:
-      name: the filename to search for
-      path: the optional path string (default: os.environ['PATH')
-      exts: optional list/tuple of extensions to try (default: ('',))
-
-    Returns:
-      The abspath to the binary or None if not found.
-    """
-    path = path or os.environ['PATH']
-    for dir in path.split(os.pathsep):
-        for ext in exts:
-            binpath = os.path.join(dir, name) + ext
-            if os.path.exists(binpath):
-                return os.path.abspath(binpath)
-    return None
-
-
-def valid_c_tests():
-    """
-    Asserts that the c_tests are reachable.  Returns True if all of the
-    tests exists as a file, False otherwise.
-    """
-    valid = True
-
-    for test in c_tests:
-        if SearchPath(test) is None:
-            valid = False
-
-    return valid
-
-
-class TestCoreC(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-    @skipUnless(valid_c_tests(), "Error locating tests in: %s" % c_tests)
-    def test_c_stuff(self):
-        for test in c_tests:
-            self.assertEqual(0, os.system(test))
-
-
-class TestCoreValgrind(unittest.TestCase):
+class TestCore(unittest.TestCase):
 
     def __init__(self, *args):
         self.pyeclib_core_test = "test_pyeclib_c.py"
@@ -132,7 +56,7 @@ class TestCoreValgrind(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def test_core_valgrind(self):
+    def test_core(self):
         self.assertTrue(True)
         cur_dir = os.getcwd()
         print("\n")
@@ -163,7 +87,10 @@ if __name__ == "__main__":
         if (0 != os.system("which valgrind")):
             print("You don't appear to have 'valgrind' installed")
             sys.exit(-1)
-        # run_under_valgrind = True
+        run_under_valgrind = True
         test_cmd_prefix = "valgrind --leak-check=full "
         log_filename_prefix = "valgrind"
-    unittest.main(verbosity=2)
+    if sys.version_info<(2,7,0):
+        unittest.main()
+    else:
+        unittest.main(verbosity=2)

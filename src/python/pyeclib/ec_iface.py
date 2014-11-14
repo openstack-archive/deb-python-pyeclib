@@ -1,4 +1,5 @@
-# Copyright (c) 2013, Kevin Greenan (kmgreen2@gmail.com)
+# Copyright (c) 2013-2014, Kevin Greenan (kmgreen2@gmail.com)
+# Copyright (c) 2014, Tushar Gohad (tushar.gohad@intel.com)
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -21,14 +22,87 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import sys
-import types
+from enum import Enum
+from enum import unique
+from utils import create_instance
+from utils import positive_int_value
 
-#
+
+def PyECLibVersion(z, y, x):
+    return (((z) << 16) + ((y) << 8) + (x))
+
+PYECLIB_MAJOR = 0
+PYECLIB_MINOR = 9
+PYECLIB_REV = 4
+PYECLIB_VERSION = PyECLibVersion(PYECLIB_MAJOR, PYECLIB_MINOR,
+                                 PYECLIB_REV)
+
+
+PYECLIB_MAX_DATA = 32
+PYECLIB_MAX_PARITY = 32
+
+
+@unique
+class PyECLibEnum(Enum):
+
+    def describe(self):
+        # returns supported types
+        return list(self)
+
+    @classmethod
+    def has_enum(cls, name):
+        # returns True if name is a valid member of the enum
+        try:
+            cls.__getattr__(name)
+        except AttributeError:
+            return False
+        return True
+
+    @classmethod
+    def get_by_name(cls, name):
+        try:
+            obj = cls.__getattr__(name)
+        except AttributeError:
+            return None
+        return obj
+
+    @classmethod
+    def names(cls):
+        return [name for name, value in cls.__members__.items()]
+
+    @classmethod
+    def values(cls):
+        return [value for name, value in cls.__members__.items()]
+
+    def __str__(self):
+        return "%s: %d" % (self.name, self.value)
+
+
+# Erasure Code backends supported as of this PyECLib API rev
+class PyECLib_EC_Types(PyECLibEnum):
+    # Note: the Enum start value defaults to 1 as the starting value and not 0
+    # 0 is False in the boolean sense but enum members evaluate to True
+    jerasure_rs_vand = 1
+    jerasure_rs_cauchy = 2
+    flat_xor_hd = 3
+    isa_l_rs_vand = 4
+
+
+# Output of Erasure (en)Coding process are data "fragments".  Fragment data
+# integrity checks are provided by a checksum embedded in a header (prepend)
+# for each fragment.
+
+# The following Enum defines the schemes supported for fragment checksums.
+# The checksum type is "none" unless specified.
+class PyECLib_FRAGHDRCHKSUM_Types(PyECLibEnum):
+    # Note: the Enum start value defaults to 1 as the starting value and not 0
+    # 0 is False in the boolean sense but enum members evaluate to True
+    none = 1
+    algsig = 2
+    inline_crc32 = 3
+
+
 # Generic ECDriverException
-#
-
-
 class ECDriverError(Exception):
 
     def __init__(self, error_str):
@@ -38,76 +112,58 @@ class ECDriverError(Exception):
         return self.error_str
 
 
-def import_class(import_str):
-    """
-    Returns a class from a string that specifies a module and/or class
-
-    :param import_str: import path, e.g. 'httplib.HTTPConnection'
-    :returns imported object
-    :raises: ImportedError if the class does not exist or the path is invalid
-    """
-    (mod_str, separator, class_str) = import_str.rpartition('.')
-    try:
-        __import__(mod_str)
-        return getattr(sys.modules[mod_str], class_str)
-    except (ValueError, AttributeError) as e:
-        raise ImportError('Class %s cannot be found (%)' %
-                          (class_str,
-                           traceback.format_exception(*sys.exc_info())))
-
-
-def create_instance(import_str, *args, **kwargs):
-    """
-    Returns instance of class which imported by import path.
-    :param import_str: import path of class
-    :param \*args: indexed arguments for new instance
-    :param \*\*kwargs: keyword arguments for new instance
-    :returns: instance of imported class which instantiated with
-    arguments *args and **kwargs
-    """
-    try:
-        object_class = import_class(import_str)
-    except Exception as e:
-        raise
-    instance = object_class(*args, **kwargs)
-
-    return instance
-
-
+# Main ECDriver class
 class ECDriver(object):
 
     def __init__(self, *args, **kwargs):
         self.k = -1
         self.m = -1
-        self.w = -1
+        self.ec_type = None
+        self.chksum_type = None
+        self.library_import_str = None
         for (key, value) in kwargs.items():
             if key == "k":
-                self.k = int(value)
-            if key == "m":
-                self.m = int(value)
-            if key == "w":
-                self.w = int(value)
+                try:
+                    self.k = positive_int_value(value)
+                except ValueError as e:
+                    raise ECDriverError(
+                        "Invalid number of data fragments (k)")
+            elif key == "m":
+                try:
+                    self.m = positive_int_value(value)
+                except ValueError as e:
+                    raise ECDriverError(
+                        "Invalid number of data fragments (m)")
+            elif key == "ec_type":
+                if PyECLib_EC_Types.has_enum(value):
+                    self.ec_type = \
+                        PyECLib_EC_Types.get_by_name(value)
+                else:
+                    raise ECDriverError(
+                        "%s is not a valid EC type for PyECLib!" % value)
+            elif key == "chksum_type":
+                if PyECLib_FRAGHDRCHKSUM_Types.has_enum(value):
+                    self.chksum_type = \
+                        PyECLib_FRAGHDRCHKSUM_Types.get_by_name(value)
+                else:
+                    raise ECDriverError(
+                        "%s is not a valid checksum type for PyECLib!" % value)
 
-        self.library_import_str = kwargs.pop('library_import_str',
-                                             'pyeclib.core.ECPyECLibDriver')
-
-        if self.k < 0:
+        if library_import_str is not None:
+            self.library_import_str = library_import_str
+        else:
             raise ECDriverError(
-                "Number of data fragments (k) was not specified "
+                "Library import string (library_import_str) was not specified "
                 "and is a required argument!")
-        if self.m < 0:
-            raise ECDriverError(
-                "Number of parity fragments (m) was not specified "
-                "and is a required argument!")
-
         #
-        # We require keyword arguments to prevent ambiguity between EC libs
+        # Instantiate EC backend driver
         #
         self.ec_lib_reference = create_instance(
-            self.library_import_str,
-            *args,
-            **kwargs)
-
+            library_import_str,
+            k=self.k,
+            m=self.m,
+            ec_type=self.ec_type,
+            chksum_type=self.chksum_type)
         #
         # Verify that the imported library implements the required functions
         #
@@ -179,21 +235,24 @@ class ECDriver(object):
         return self.ec_lib_reference.reconstruct(
             available_fragment_payloads, missing_fragment_indexes)
 
-    def fragments_needed(self, missing_fragment_indexes):
+    def fragments_needed(self, reconstruction_indexes, exclude_indexes = []):
         """
         Determine which fragments are needed to reconstruct some subset of
         missing fragments.
 
-        :param missing_fragment_indexes: a list of integers representing the
+        :param reconstruction_indexes: a list of integers representing the
                                          indexes of the fragments to be
                                          reconstructed.
-        :returns: a list of lists containing fragment indexes.  Each sub-list
-                  contains a combination of fragments that can be used to
+        :param exclude_indexes: a list of integers representing the
+                                         indexes of the fragments to be
+                                         excluded from the reconstruction
+                                         equations. 
+        :returns: a list containing fragment indexes that can be used to 
                   reconstruct the missing fragments.
         :raises: ECDriverError if there is an error during decoding or there
                  are not sufficient fragments to decode
         """
-        return self.ec_lib_reference.fragments_needed(missing_fragment_indexes)
+        return self.ec_lib_reference.fragments_needed(reconstruction_indexes, exclude_indexes)
 
     def min_parity_fragments_needed(self):
         return self.ec_lib_reference.min_parity_fragments_needed()
@@ -252,3 +311,77 @@ class ECDriver(object):
         segmenting a data stream.
         """
         return self.ec_lib_reference.get_segment_info(data_len, segment_size)
+
+    #
+    # Map of segment indexes with a list of tuples
+    #
+    def get_segment_info_byterange(self, ranges, data_len, segment_size):
+        """
+        Get segmentation info for a byterange request, given a data length and
+        segment size.
+
+        This will return a map-of-maps that represents a recipe describing 
+        the segments and ranges within each segment needed to satisfy a range
+        request.
+
+        Assume a range request is given for an object with segment size 3K and
+        a 1 MB file:
+
+        Ranges = (0, 1), (1, 12), (10, 1000), (0, segment_size-1), 
+                 (1, segment_size+1), (segment_size-1, 2*segment_size)
+
+        This will return a map keyed on the ranges, where there is a recipe
+        given for each range:
+
+        {
+         (0, 1): {0: (0, 1)}, 
+         (10, 1000): {0: (10, 1000)}, 
+         (1, 12): {0: (1, 12)}, 
+         (0, 3071): {0: (0, 3071)}, 
+         (3071, 6144): {0: (3071, 3071), 1: (0, 3071), 2: (0, 0)}, 
+         (1, 3073): {0: (1, 3071), 1: (0,0)}
+        }
+
+        """
+        
+        segment_info = self.ec_lib_reference.get_segment_info(data_len, segment_size)
+
+        segment_size = segment_info['segment_size']
+        last_segment_size = segment_info['last_segment_size']
+        fragment_size = segment_info['fragment_size']
+        last_fragment_size = segment_info['last_fragment_size']
+        num_segments = segment_info['num_segments']
+
+        sorted_ranges = ranges[:]
+        sorted_ranges.sort(lambda x, y: x[0] - y[0])
+
+        recipe = {}
+
+        for r in ranges:
+            segment_map = {}
+            begin_off = r[0]
+            end_off = r[1]
+            begin_segment = begin_off / segment_size 
+            end_segment = end_off / segment_size 
+          
+            if begin_segment == end_segment:
+                begin_relative_off = begin_off % segment_size
+                end_relative_off = end_off % segment_size
+                segment_map[begin_segment] = (begin_relative_off, end_relative_off)
+            else:
+                begin_relative_off = begin_off % segment_size
+                end_relative_off = end_off % segment_size
+                
+                segment_map[begin_segment] = (begin_relative_off, segment_size-1)
+
+                for middle_segment in range(begin_segment+1, end_segment):
+                    segment_map[middle_segment] = (0, segment_size-1)
+                
+                segment_map[end_segment] = (0, end_relative_off)
+
+            recipe[r] = segment_map
+               
+
+        return recipe
+
+

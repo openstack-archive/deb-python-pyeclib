@@ -43,38 +43,12 @@ except ImportError:
 from setuptools import Extension
 from setuptools.command.install import install as _install
 
-#
-# Fuck Apple and their universal binaries!
-# I am not supporting powerpc, so ignoring
-# it
-#
-autoconf_arguments = "ac_none"
-
 platform_str = platform.platform()
-if platform_str.find("Darwin") > -1:
-    if platform_str.find("x86_64") > -1 and platform_str.find("i386") > -1:
-        autoconf_arguments = 'CC="gcc -arch i386 -arch x86_64" CPP="gcc -E"'
-
 default_python_incdir = get_python_inc()
 default_python_libdir = get_python_lib()
 default_library_paths = [default_python_libdir,
                          ('%s/usr/local/lib' % _exec_prefix),
                          '/lib', '/usr/lib', '/usr/local/lib']
-
-# build CPPFLAGS, LDFLAGS, LIBS
-global cppflags
-global ldflags
-global libs
-
-c_eclib_dir = "c_eclib-0.9"
-
-
-def _construct_jerasure_buildenv():
-    _cppflags = _read_file_as_str("%s/._cppflags" % c_eclib_dir)
-    _ldflags = _read_file_as_str("%s/._ldflags" % c_eclib_dir)
-    _libs = _read_file_as_str("%s/._libs" % c_eclib_dir)
-    return _cppflags, _ldflags, _libs
-
 
 # utility routine
 def _read_file_as_str(name):
@@ -85,28 +59,40 @@ def _read_file_as_str(name):
 
 class build(_build):
 
+    def check_liberasure(self):
+        missing = True
+        library_suffix = ".so"
+        if platform_str.find("Darwin") > -1:
+            library_suffix = ".dylib"
+        liberasure_file = "liberasurecode" + library_suffix
+        for dir in (default_library_paths):
+            liberasure_file_path = dir + os.sep + liberasure_file
+            if (os.path.isfile(liberasure_file_path)):
+                missing = False
+                break
+        if missing:
+            print("***************************************************")
+            print("**                                             ")
+            print("** Can not locate the liberasurecode library:  ")
+            print("**   %s" % (liberasure_file))
+            print("**                                             ")
+            print("** PyECLib requires that the liberasurecode    ")
+            print("** library be installed. The liberasurecode    ")
+            print("** library can be obtained from:               ")
+            print("** git@bitbucket.org:tsg-/liberasurecode.git")
+            print("**                                             ")
+            print("** Please install liberasurecode and try again.")
+            print("***************************************************")
+            sys.exit(1)
+
     def run(self):
-        ret = os.system('(cd %s && chmod 755 build-c_eclib.sh && \
-                         ./build-c_eclib.sh "%s" %s)' %
-                        (c_eclib_dir, autoconf_arguments, _exec_prefix))
-        if ret != 0:
-            sys.exit(ret)
-
-        cppflags, ldflags, libs = _construct_jerasure_buildenv()
-        os.environ['CPPFLAGS'] = cppflags
-        os.environ['LDFLAGS'] = ldflags
-        os.environ['LIBS'] = libs
-
+        self.check_liberasure()
         _build.run(self)
 
 
 class clean(_clean):
 
     def run(self):
-        ret = os.system('(cd %s && chmod 755 clean-c_eclib.sh && \
-                          ./clean-c_eclib.sh)' % c_eclib_dir)
-        if ret != 0:
-            sys.exit(2)
         _clean.run(self)
 
 
@@ -140,12 +126,6 @@ class install(_install):
         if installroot.startswith("/usr"):
             installroot = "/"
 
-        ret = os.system('(cd %s && chmod 755 install-c_eclib.sh && \
-                        ./install-c_eclib.sh %s)' %
-                        (c_eclib_dir, installroot))
-        if ret != 0:
-            sys.exit(ret)
-
         default_library_paths.insert(0, "%s/usr/local/lib" % installroot)
         _install.run(self)
 
@@ -173,13 +153,13 @@ class install(_install):
             print("***************************************************")
             print("**                                             ")
             print("** PyECLib libraries have been installed to:   ")
-            print("**   %s/usr/local/lib" % installroot)
+            print("**   %susr/local/lib" % installroot)
             print("**                                             ")
             print("** Any user using this library must update:    ")
             print("**   LD_LIBRARY_PATH                         ")
             print("**                                             ")
             print("** The best way to do this is to put this line:")
-            print("**   export LD_LIBRARY_PATH=%s" % ("%s/usr/local/lib"
+            print("**   export LD_LIBRARY_PATH=%s" % ("%susr/local/lib"
                                                       % installroot))
             print("**                                             ")
             print("** into .bashrc, .profile, or the appropriate shell")
@@ -193,13 +173,13 @@ module = Extension('pyeclib_c',
                                   ('MINOR VERSION', '9')],
                    include_dirs=[default_python_incdir,
                                  '/usr/local/include',
+                                 '/usr/local/include/jerasure',
                                  '/usr/include',
                                  'src/c/pyeclib_c',
-                                 '%s/include' % c_eclib_dir,
                                  '/usr/local/include'],
                    library_dirs=default_library_paths,
                    runtime_library_dirs=default_library_paths,
-                   libraries=['Jerasure', 'Xorcode', 'alg_sig'],
+                   libraries=['Jerasure', 'erasurecode'],
                    # The extra arguments are for debugging
                    # extra_compile_args=['-g', '-O0'],
                    extra_link_args=['-Wl,-rpath,%s' %
@@ -207,7 +187,7 @@ module = Extension('pyeclib_c',
                    sources=['src/c/pyeclib_c/pyeclib_c.c'])
 
 setup(name='PyECLib',
-      version='0.9.8',
+      version='0.9.10',
       author='Kevin Greenan',
       author_email='kmgreen2@gmail.com',
       maintainer='Kevin Greenan and Tushar Gohad',

@@ -1,4 +1,3 @@
-
 # Copyright (c) 2013, 2014, Kevin Greenan (kmgreen2@gmail.com)
 # All rights reserved.
 #
@@ -22,14 +21,15 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pyeclib_c
+from ec_iface import PyECLib_FRAGHDRCHKSUM_Types
 import math
+import pyeclib_c
+import sys
 
-#
+pyver = float('%s.%s' % sys.version_info[:2])
+
+
 # Generic ECPyECLibException
-#
-
-
 class ECPyECLibException(Exception):
 
     def __init__(self, error_str):
@@ -41,125 +41,67 @@ class ECPyECLibException(Exception):
 
 class ECPyECLibDriver(object):
 
-    def __init__(self, k, m, ec_type, chksum_type="none"):
-        self.ec_rs_vand = "jerasure_rs_vand"
-        self.ec_rs_cauchy_orig = "jerasure_rs_cauchy_orig"
-        self.ec_flat_xor_3 = "flat_xor_3"
-        self.ec_flat_xor_4 = "flat_xor_4"
-        self.chksum_none = "none"
-        self.chksum_inline = "inline"
-        self.chksum_algsig = "algsig"
-        self.ec_types = [
-            self.ec_rs_vand,
-            self.ec_rs_cauchy_orig,
-            self.ec_flat_xor_3,
-            self.ec_flat_xor_4]
-        self.chksum_types = [
-            self.chksum_none,
-            self.chksum_inline,
-            self.chksum_algsig]
-        self.ec_rs_vand_best_w = 16
-        self.ec_default_w = 32
-        self.ec_rs_cauchy_best_w = 4
+    def __init__(self, k, m, ec_type,
+                 chksum_type=PyECLib_FRAGHDRCHKSUM_Types.none):
         self.k = k
         self.m = m
-
-        #
-        # Override the default wordsize (w) for Reed-Solomon, if specified
-        #
-        if ec_type[:len(self.ec_rs_vand)] == self.ec_rs_vand \
-                and len(ec_type) > len(self.ec_rs_vand):
-            type_ary = ec_type.split("_")
-            if len(type_ary) != 3:
-                raise ECPyECLibException(
-                    "%s is not a valid EC type for PyECLib!" %
-                    ec_type)
-            self.ec_rs_vand_best_w = int(type_ary[2])
-            ec_type = self.ec_rs_vand
-
-        #
-        # Override the default wordsize (w) for Cauchy, if specified
-        #
-        if ec_type[:len(self.ec_rs_cauchy_orig)] == self.ec_rs_cauchy_orig \
-                and len(ec_type) > len(self.ec_rs_cauchy_orig):
-            type_ary = ec_type.split("_")
-            if len(type_ary) != 4:
-                raise ECPyECLibException(
-                    "%s is not a valid EC type for PyECLib!" %
-                    ec_type)
-            self.ec_rs_cauchy_best_w = int(type_ary[3])
-            ec_type = self.ec_rs_cauchy_orig
-
-        if ec_type in self.ec_types:
-            self.ec_type = ec_type
-        else:
-            raise ECPyECLibException("%s is not a valid EC type for PyECLib!")
-
-        if chksum_type in self.chksum_types:
-            self.chksum_type = chksum_type
-        else:
-            raise ECPyECLibException(
-                "%s is not a valid checksum type for PyECLib!")
-
-        if self.ec_type == self.ec_rs_vand:
-            self.w = self.ec_rs_vand_best_w
-            self.hd = self.m + 1
-        elif self.ec_type == self.ec_rs_cauchy_orig:
-            self.w = self.ec_rs_cauchy_best_w
-            self.hd = self.m + 1
-        elif self.ec_type == self.ec_flat_xor_3:
-            self.w = self.ec_default_w
-            self.hd = 3
-        elif self.ec_type == self.ec_flat_xor_4:
-            self.w = self.ec_default_w
-            self.hd = 4
-        else:
-            self.w = self.ec_default_w
+        self.ec_type = ec_type
+        self.chksum_type = chksum_type
+        hd = m
 
         self.inline_chksum = 0
         self.algsig_chksum = 0
-        if self.chksum_type == self.chksum_inline:
+        # crc32 is the only inline checksum type currently supported
+        if self.chksum_type is PyECLib_FRAGHDRCHKSUM_Types.inline_crc32:
             self.inline_chksum = 1
-            self.algsig_chksum = 0
-        elif self.chksum_type == self.chksum_algsig:
-            self.inline_chksum = 0
+        elif self.chksum_type is PyECLib_FRAGHDRCHKSUM_Types.algsig:
             self.algsig_chksum = 1
+
+        name = self.ec_type.name
+
+        if name == "flat_xor_hd":
+          hd = 4 
 
         self.handle = pyeclib_c.init(
             self.k,
             self.m,
-            self.w,
-            self.ec_type,
+            ec_type.value, 
+            hd,
             self.inline_chksum,
             self.algsig_chksum)
 
     def encode(self, data_bytes):
         return pyeclib_c.encode(self.handle, data_bytes)
 
+    def _validate_and_return_fragment_size(self, fragments):
+      if len(fragments) > 0 and len(fragments[0]) == 0:
+        return -1
+      fragment_len = len(fragments[0])
+
+      for fragment in fragments[1:]:
+        if len(fragment) != fragment_len:
+          return -1
+
+      return fragment_len
+
     def decode(self, fragment_payloads):
-        try:
-            ret_string = pyeclib_c.fragments_to_string(
-                self.handle,
-                fragment_payloads)
-        except Exception as e:
-            raise ECPyECLibException("Error in ECPyECLibDriver.decode")
+        fragment_len = self._validate_and_return_fragment_size(fragment_payloads)
+        if fragment_len < 0:
+            raise ECPyECLibException("Invalid fragment payload in ECPyECLibDriver.decode")
 
-        if ret_string is None:
-            (data_frags,
-             parity_frags,
-             missing_idxs) = pyeclib_c.get_fragment_partition(
-                self.handle, fragment_payloads)
-            decoded_fragments = pyeclib_c.decode(
-                self.handle, data_frags, parity_frags, missing_idxs,
-                len(data_frags[0]))
-            ret_string = pyeclib_c.fragments_to_string(
-                self.handle,
-                decoded_fragments)
+        if len(fragment_payloads) < self.k:
+            raise ECPyECLibException("Not enough fragments given in ECPyECLibDriver.decode")
 
-        return ret_string
+        return pyeclib_c.decode(self.handle, fragment_payloads, fragment_len)
+            
 
     def reconstruct(self, fragment_payloads, indexes_to_reconstruct):
+        fragment_len = self._validate_and_return_fragment_size(fragment_payloads)
+        if fragment_len < 0:
+            raise ECPyECLibException("Invalid fragment payload in ECPyECLibDriver.reconstruct")
+
         reconstructed_data = []
+        _fragment_payloads = fragment_payloads[:]
 
         # Reconstruct the data, then the parity
         # The parity cannot be reconstructed until
@@ -169,20 +111,16 @@ class ECPyECLibDriver(object):
 
         while len(_indexes_to_reconstruct) > 0:
             index = _indexes_to_reconstruct.pop(0)
-            (data_frags,
-             parity_frags,
-             missing_idxs) = pyeclib_c.get_fragment_partition(
-                self.handle, fragment_payloads)
             reconstructed = pyeclib_c.reconstruct(
-                self.handle, data_frags, parity_frags, missing_idxs,
-                index, len(data_frags[0]))
+                self.handle, _fragment_payloads, fragment_len, index)
             reconstructed_data.append(reconstructed)
+            _fragment_payloads.append(reconstructed)
 
         return reconstructed_data
 
-    def fragments_needed(self, missing_fragment_indexes):
+    def fragments_needed(self, reconstruct_indexes, exclude_indexes):
         return pyeclib_c.get_required_fragments(
-            self.handle, missing_fragment_indexes)
+            self.handle, reconstruct_indexes, exclude_indexes)
 
     def min_parity_fragments_needed(self):
         """ FIXME - fix this to return a function of HD """
@@ -192,7 +130,11 @@ class ECPyECLibDriver(object):
         return pyeclib_c.get_metadata(self.handle, fragment)
 
     def verify_stripe_metadata(self, fragment_metadata_list):
-        return pyeclib_c.check_metadata(self.handle, fragment_metadata_list)
+        metadata_len = self._validate_and_return_fragment_size(fragment_payloads)
+        if metadata_len < 0:
+            raise ECPyECLibException("Invalid fragment payload in ECPyECLibDriver.verify_metadata")
+
+        return pyeclib_c.check_metadata(self.handle, fragment_metadata_list, metadata_len)
 
     def get_segment_info(self, data_len, segment_size):
         return pyeclib_c.get_segment_info(self.handle, data_len, segment_size)
@@ -200,7 +142,7 @@ class ECPyECLibDriver(object):
 
 class ECNullDriver(object):
 
-    def __init__(self, k, m):
+    def __init__(self, k, m, ec_type=None, chksum_type=None):
         self.k = k
         self.m = m
 
@@ -236,9 +178,8 @@ class ECNullDriver(object):
 #
 class ECStripingDriver(object):
 
-    def __init__(self, k, m):
-        """
-        Stripe an arbitrary-sized string into k fragments
+    def __init__(self, k, m, ec_type=None, chksum_type=None):
+        """Stripe an arbitrary-sized string into k fragments
         :param k: the number of data fragments to stripe
         :param m: the number of parity fragments to stripe
         :raises: ECPyECLibException if there is an error during encoding
@@ -251,8 +192,7 @@ class ECStripingDriver(object):
         self.m = m
 
     def encode(self, data_bytes):
-        """
-        Stripe an arbitrary-sized string into k fragments
+        """Stripe an arbitrary-sized string into k fragments
         :param data_bytes: the buffer to encode
         :returns: a list of k buffers (data only)
         :raises: ECPyECLibException if there is an error during encoding
@@ -274,8 +214,7 @@ class ECStripingDriver(object):
         return fragments
 
     def decode(self, fragment_payloads):
-        """
-        Convert a k-fragment data stripe into a string
+        """Convert a k-fragment data stripe into a string
         :param fragment_payloads: fragments (in order) to convert into a string
         :returns: a string containing the original data
         :raises: ECPyECLibException if there is an error during decoding
@@ -295,8 +234,7 @@ class ECStripingDriver(object):
 
     def reconstruct(self, available_fragment_payloads,
                     missing_fragment_indexes):
-        """
-        We cannot reconstruct a fragment using other fragments.  This means
+        """We cannot reconstruct a fragment using other fragments.  This means
         that reconstruction means all fragments must be specified, otherwise we
         cannot reconstruct and must raise an error.
         :param available_fragment_payloads: available fragments (in order)
@@ -312,25 +250,23 @@ class ECStripingDriver(object):
         return available_fragment_payloads
 
     def fragments_needed(self, missing_fragment_indexes):
-        """
-        By definition, all missing fragment indexes are needed to reconstruct,
-        so just return the list handed to this function.
+        """By definition, all missing fragment indexes are needed to
+        reconstruct, so just return the list handed to this function.
         :param missing_fragment_indexes: indexes of missing fragments
         :returns: missing_fragment_indexes
         """
         return missing_fragment_indexes
 
     def get_metadata(self, fragment):
-        """
-        This driver does not include fragment metadata, so return empty string
+        """This driver does not include fragment metadata, so return empty
+        string
         :param fragment: a fragment
         :returns: empty string
         """
         return ''
 
     def verify_stripe_metadata(self, fragment_metadata_list):
-        """
-        This driver does not include fragment metadata, so return true
+        """This driver does not include fragment metadata, so return true
         :param fragment_metadata_list: a list of fragments
         :returns: True
         """
