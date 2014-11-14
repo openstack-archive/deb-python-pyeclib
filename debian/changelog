@@ -2,4 +2,4 @@ python-pyeclib (0.9.10-1) unstable; urgency=low
 
   * Initial release. (Closes: #769519)
 
- -- Thomas Goirand <zigo@debian.org>  Sat, 24 May 2014 17:21:07 +0800
+ -- Thomas Goirand <zigo@debian.org>  Fri, 14 Nov 2014 17:37:50 +0800
