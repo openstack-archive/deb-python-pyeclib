@@ -20,6 +20,7 @@ override_dh_install:
 	done
 
 override_dh_auto_clean:
+	find . -iname '*.pyc' -delete
 
 # TODO: run the test stuff
 #override_dh_auto_test:
