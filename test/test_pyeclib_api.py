@@ -41,8 +41,7 @@ else:
 class TestNullDriver(unittest.TestCase):
 
     def setUp(self):
-        self.null_driver = ECDriver(
-            library_import_str="pyeclib.core.ECNullDriver", k=8, m=2)
+        self.null_driver = ECDriver("pyeclib.core.ECNullDriver", k=8, m=2)
 
     def tearDown(self):
         pass
@@ -55,8 +54,7 @@ class TestNullDriver(unittest.TestCase):
 class TestStripeDriver(unittest.TestCase):
 
     def setUp(self):
-        self.stripe_driver = ECDriver(
-            library_import_str="pyeclib.core.ECStripingDriver", k=8, m=0)
+        self.stripe_driver = ECDriver("pyeclib.core.ECStripingDriver", k=8, m=0)
 
     def tearDown(self):
         pass
@@ -438,11 +436,6 @@ class TestPyECLibDriver(unittest.TestCase):
                         reconstructed_fragments[0] == orig_fragments[
                             idxs_to_remove[0]])
 
-    def test_min_parity_fragments_needed(self):
-        pyeclib_drivers = []
-        pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type="jerasure_rs_vand"))
-        self.assertTrue(
-            pyeclib_drivers[0].min_parity_fragments_needed() == 1)
 
 if __name__ == '__main__':
     unittest.main()

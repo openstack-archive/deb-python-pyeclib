@@ -115,7 +115,7 @@ class ECDriverError(Exception):
 # Main ECDriver class
 class ECDriver(object):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, library_import_str, *args, **kwargs):
         self.k = -1
         self.m = -1
         self.ec_type = None
@@ -172,7 +172,6 @@ class ECDriver(object):
             'encode': 0,
             'reconstruct': 0,
             'fragments_needed': 0,
-            'min_parity_fragments_needed': 0,
             'get_metadata': 0,
             'verify_stripe_metadata': 0,
             'get_segment_info': 0
@@ -190,7 +189,7 @@ class ECDriver(object):
         if len(not_implemented_str) > 0:
             raise ECDriverError(
                 "The following required methods are not implemented "
-                "in %s: %s" % (self.library_import_str, not_implemented_str))
+                "in %s: %s" % (library_import_str, not_implemented_str))
 
     def encode(self, data_bytes):
         """
@@ -253,9 +252,6 @@ class ECDriver(object):
                  are not sufficient fragments to decode
         """
         return self.ec_lib_reference.fragments_needed(reconstruction_indexes, exclude_indexes)
-
-    def min_parity_fragments_needed(self):
-        return self.ec_lib_reference.min_parity_fragments_needed()
 
     def get_metadata(self, fragment):
         """
