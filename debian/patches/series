@@ -1,1 +1,2 @@
 disable-check-for-liberasure-code.patch
+remove-rpath-tweak.patch

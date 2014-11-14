@@ -1,0 +1,18 @@
+Description: Removes rpath tweak
+ Upstream is playing with rpath, which should never happen in a system like
+ Debian. So this patch removes it from setup.py.
+Author: Thomas Goirand <zigo@debian.org>
+Forwarded: no
+Last-Update: 2014-11-14
+
+--- python-pyeclib-0.9.10.orig/setup.py
++++ python-pyeclib-0.9.10/setup.py
+@@ -182,8 +182,6 @@ module = Extension('pyeclib_c',
+                    libraries=['Jerasure', 'erasurecode'],
+                    # The extra arguments are for debugging
+                    # extra_compile_args=['-g', '-O0'],
+-                   extra_link_args=['-Wl,-rpath,%s' %
+-                                    l for l in default_library_paths],
+                    sources=['src/c/pyeclib_c/pyeclib_c.c'])
+ 
+ setup(name='PyECLib',
