@@ -9,9 +9,9 @@ Uploaders: Julien Danjou <acid@debian.org>,
 Build-Depends: debhelper (>= 9),
                liberasurecode-dev,
                libgf-complete-dev,
-               python-all (>= 2.6.6-3~),
+               python-all-dev (>= 2.6.6-3~),
                python-setuptools,
-               python3-all,
+               python3-all-dev,
                python3-setuptools
 Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/python-pyeclib.git
