@@ -1,6 +1,7 @@
 python-pyeclib (0.9.10-2) unstable; urgency=medium
 
   * Added missing python{3,}-all-dev build-depends.
+  * Added missing libjerasure-dev build-depends.
 
  -- Thomas Goirand <zigo@debian.org>  Thu, 20 Nov 2014 02:15:48 +0800
 
