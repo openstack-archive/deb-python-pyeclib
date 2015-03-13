@@ -5,10 +5,12 @@ Author: Thomas Goirand <zigo@debian.org>
 Forwarded: no
 Last-Update: 2014-11-14
 
---- python-pyeclib-0.9.10.orig/setup.py
-+++ python-pyeclib-0.9.10/setup.py
-@@ -182,8 +182,6 @@ module = Extension('pyeclib_c',
-                    libraries=['Jerasure', 'erasurecode'],
+Index: python-pyeclib/setup.py
+===================================================================
+--- python-pyeclib.orig/setup.py
++++ python-pyeclib/setup.py
+@@ -173,8 +173,6 @@ module = Extension('pyeclib_c',
+                    libraries=['erasurecode'],
                     # The extra arguments are for debugging
                     # extra_compile_args=['-g', '-O0'],
 -                   extra_link_args=['-Wl,-rpath,%s' %

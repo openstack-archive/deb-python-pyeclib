@@ -3,8 +3,10 @@ Author: Thomas Goirand <zigo@debian.org>
 Forwarded: no
 Last-Update: 2014-11-14
 
---- python-pyeclib-0.9.10.orig/setup.py
-+++ python-pyeclib-0.9.10/setup.py
+Index: python-pyeclib/setup.py
+===================================================================
+--- python-pyeclib.orig/setup.py
++++ python-pyeclib/setup.py
 @@ -46,9 +46,7 @@ from setuptools.command.install import i
  platform_str = platform.platform()
  default_python_incdir = get_python_inc()
@@ -16,17 +18,17 @@ Last-Update: 2014-11-14
  
  # utility routine
  def _read_file_as_str(name):
-@@ -126,7 +124,6 @@ class install(_install):
+@@ -130,7 +128,6 @@ class install(_install):
          if installroot.startswith("/usr"):
              installroot = "/"
  
 -        default_library_paths.insert(0, "%s/usr/local/lib" % installroot)
          _install.run(self)
  
-         #
-@@ -172,11 +169,8 @@ module = Extension('pyeclib_c',
-                    define_macros=[('MAJOR VERSION', '0'),
-                                   ('MINOR VERSION', '9')],
+         # Another Mac-ism...  If the libraries are installed
+@@ -163,11 +160,8 @@ module = Extension('pyeclib_c',
+                    define_macros=[('MAJOR VERSION', '1'),
+                                   ('MINOR VERSION', '0')],
                     include_dirs=[default_python_incdir,
 -                                 '/usr/local/include',
 -                                 '/usr/local/include/jerasure',
@@ -36,4 +38,4 @@ Last-Update: 2014-11-14
 +                                 'src/c/pyeclib_c'],
                     library_dirs=default_library_paths,
                     runtime_library_dirs=default_library_paths,
-                    libraries=['Jerasure', 'erasurecode'],
+                    libraries=['erasurecode'],

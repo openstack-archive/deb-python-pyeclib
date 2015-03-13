@@ -7,9 +7,11 @@ Author: Thomas Goirand <zigo@debian.org>
 Forwarded: no
 Last-Update: 2014-11-14
 
---- python-pyeclib-0.9.10.orig/setup.py
-+++ python-pyeclib-0.9.10/setup.py
-@@ -86,7 +86,7 @@ class build(_build):
+Index: python-pyeclib/setup.py
+===================================================================
+--- python-pyeclib.orig/setup.py
++++ python-pyeclib/setup.py
+@@ -90,7 +90,7 @@ class build(_build):
              sys.exit(1)
  
      def run(self):
