@@ -1,4 +1,4 @@
-# Copyright (c) 2013, Kevin Greenan (kmgreen2@gmail.com)
+# Copyright (c) 2014, Tushar Gohad (tusharsg@gmail.com)
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -21,35 +21,32 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from pyeclib.ec_iface import ECDriver
-import argparse
+TOPDIR := $(PWD)
 
-parser = argparse.ArgumentParser(description='Encoder for PyECLib.')
-parser.add_argument('k', type=int, help='number of data elements')
-parser.add_argument('m', type=int, help='number of parity elements')
-parser.add_argument('ec_type', help='EC algorithm used')
-parser.add_argument('file_dir', help='directory with the file')
-parser.add_argument('filename', help='file to encode')
-parser.add_argument('fragment_dir', help='directory to drop encoded fragments')
+.PHONY: build test
 
-args = parser.parse_args()
+build:
+	python setup.py build
 
-print("k = %d, m = %d" % (args.k, args.m))
-print("ec_type = %s" % args.ec_type)
-print("filename = %s" % args.filename)
+install:	build
+	python setup.py install
 
-ec_driver = ECDriver(k=args.k, m=args.m, ec_type=args.ec_type)
+UNITS := test/test_pyeclib_api.py test/test_pyeclib_c.py
 
-# read
-with open(("%s/%s" % (args.file_dir, args.filename)), "rb") as fp:
-    whole_file_str = fp.read()
+test:		build
+	$(eval SONAMES := $(shell find $(abs_top_builddir) -name '*.so'))
+	$(eval SODIRS := $(dir $(SONAMES)))
+	$(eval LD_LIBRARY_PATH := LD_LIBRARY_PATH="$(subst / ,/:,$(SODIRS))")
+	$(eval DYLD_LIBRARY_PATH := DYLD_LIBRARY_PATH="$(subst / ,/:,$(SODIRS))")
+	$(eval DYLD_FALLBACK_LIBRARY_PATH := DYLD_FALLBACK_LIBRARY_PATH="$(subst / ,/:,$(SODIRS))")
+	rm -rf cover .coverage
+	@$(LD_LIBRARY_PATH) $(DYLD_LIBRARY_PATH) $(DYLD_FALLBACK_LIBRARY_PATH) \
+		nosetests --exe --with-coverage \
+		--cover-package pyeclib --cover-erase \
+		--cover-html --cover-html-dir=${TOPDIR}/cover \
+		$(UNITS)
 
-# encode
-fragments = ec_driver.encode(whole_file_str)
-
-# store
-i = 0
-for fragment in fragments:
-    with open("%s/%s.%d" % (args.fragment_dir, args.filename, i), "wb") as fp:
-        fp.write(fragment)
-    i += 1
+clean:
+	-rm -f pyeclib_c.so
+	-rm -rf build
+	python setup.py clean

@@ -49,7 +49,7 @@
   #define PyInt_FromLong PyLong_FromLong
   #define PyString_FromString PyUnicode_FromString
   #define ENCODE_ARGS "Oy#"
-  #define GET_METADATA_ARGS "Oy#"
+  #define GET_METADATA_ARGS "Oy#i"
 #else
   #define MOD_ERROR_VAL
   #define MOD_SUCCESS_VAL(val)
@@ -59,7 +59,7 @@
   #define PY_BUILDVALUE_OBJ_LEN(obj, objlen) \
           Py_BuildValue("s#", obj, objlen)
   #define ENCODE_ARGS "Os#"
-  #define GET_METADATA_ARGS "Os#"
+  #define GET_METADATA_ARGS "Os#i"
 #endif
 
 
@@ -81,6 +81,40 @@ static PyObject * pyeclib_c_reconstruct(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_decode(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_get_metadata(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_check_metadata(PyObject *self, PyObject *args);
+
+void
+liberasurecode_errstr(int ret, const char * prefix, char str[])
+{
+    strcpy(str, prefix);
+    switch (ret) {
+        case -EBACKENDNOTAVAIL:
+            strcat(str, "Backend instance not found");
+            break;
+        case -EINSUFFFRAGS:
+            strcat(str, "Insufficient number of fragments");
+            break;
+        case -EBACKENDNOTSUPP:
+            strcat(str, "Backend not supported");
+            break;
+        case -EINVALIDPARAMS:
+            strcat(str, "Invalid arguments");
+            break;
+        case -EBADCHKSUM:
+            strcat(str, "Fragment integrity check failed");
+            break;
+        case -EBADHEADER:
+            strcat(str, "Fragment integrity check failed");
+            break;
+        case -ENOMEM:
+            strcat(str, "Out of memory");
+            break;
+        default:
+            strcat(str, "Unknown error");
+            break;
+    }
+
+    strcat(str, ". Please inspect syslog for liberasurecode error report.");
+}
 
 /**
  * Constructor method for creating a new pyeclib object using the given parameters.
@@ -215,8 +249,6 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
   int num_segments;                        /* total number of segments */
   int fragment_size, last_fragment_size;   /* fragment sizes in bytes */
   int min_segment_size;                    /* EC algorithm's min. size (B) */
-  int aligned_segment_size;                /* size (B) adjusted for addr alignment */
-  int aligned_data_len;                    /* size (B) adjusted for addr alignment */
   
   /* Obtain and validate the method parameters */
   if (!PyArg_ParseTuple(args, "Oii", &pyeclib_obj_handle, &data_len, &segment_size)) {
@@ -251,13 +283,10 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
      */
 
     /*
-     * This will copmpute a size algined to the number of data
-     * and the underlying wordsize of the EC algorithm.
+     * This will retrieve fragment_size calculated by liberasurecode with
+     * specified backend.
      */
-    aligned_data_len = liberasurecode_get_aligned_data_size(pyeclib_handle->ec_desc, data_len);
-
-    /* aligned_data_len is guaranteed to be divisible by k */
-    fragment_size = aligned_data_len / pyeclib_handle->ec_args.k;
+    fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, data_len);
 
     /* Segment size is the user-provided segment size */
     segment_size = data_len;
@@ -269,10 +298,7 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
      * the minimum segment size.
      */
 
-    aligned_segment_size = liberasurecode_get_aligned_data_size(pyeclib_handle->ec_desc, segment_size);
-
-    /* aligned_data_len is guaranteed to be divisible by k */
-    fragment_size = aligned_segment_size / pyeclib_handle->ec_args.k;
+    fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, segment_size);
 
     last_segment_size = data_len - (segment_size * (num_segments - 1)); 
 
@@ -288,12 +314,9 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
       last_segment_size = last_segment_size + segment_size;
     } 
     
-    aligned_segment_size = liberasurecode_get_aligned_data_size(pyeclib_handle->ec_desc, last_segment_size);
-     
-    /* Compute the last fragment size from the last segment size */
-    last_fragment_size = aligned_segment_size / pyeclib_handle->ec_args.k;
+    last_fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, last_segment_size);
   }
-  
+
   /* Add header to fragment sizes */
   last_fragment_size += sizeof(fragment_header_t);
   fragment_size += sizeof(fragment_header_t);
@@ -333,6 +356,7 @@ pyeclib_c_encode(PyObject *self, PyObject *args)
   int data_len;                     /* param, length of data buffer */
   uint64_t fragment_len;            /* length, in bytes of the fragments */
   int i;                            /* a counter */
+  int ret = 0;
 
   /* Assume binary data (force "byte array" input) */
   if (!PyArg_ParseTuple(args, ENCODE_ARGS, &pyeclib_obj_handle, &data, &data_len)) {
@@ -345,10 +369,12 @@ pyeclib_c_encode(PyObject *self, PyObject *args)
     return NULL;
   }
 
-  if (liberasurecode_encode(pyeclib_handle->ec_desc,
-        data, data_len, &encoded_data, &encoded_parity, &fragment_len) < 0) {
+  ret = liberasurecode_encode(pyeclib_handle->ec_desc, data, data_len, &encoded_data, &encoded_parity, &fragment_len);
 
-    PyErr_SetString(PyECLibError, "Encountered error in liberasurecode_encode");
+  if (ret < 0) {
+    char err[255];
+    liberasurecode_errstr(ret, "Encode ERROR: ", err);
+    PyErr_SetString(PyECLibError, err);
     return NULL; 
   }
   
@@ -449,7 +475,9 @@ pyeclib_c_get_required_fragments(PyObject *self, PyObject *args)
   ret = liberasurecode_fragments_needed(pyeclib_handle->ec_desc, c_reconstruct_list, 
                                         c_exclude_list, fragments_needed);
   if (ret < 0) {
-    PyErr_Format(PyECLibError, "Not enough fragments for pyeclib.get_required_fragments!");
+    char err[255];
+    liberasurecode_errstr(ret, "Reconstruct_Fragments_Needed ERROR: ", err);
+    PyErr_SetString(PyECLibError, err);
     goto exit; 
   }
    
@@ -545,7 +573,9 @@ pyeclib_c_reconstruct(PyObject *self, PyObject *args)
                                             destination_idx, 
                                             c_reconstructed); 
   if (ret < 0) {
-    PyErr_SetString(PyECLibError, "Error calling liberasurecode_reconstruct_fragment");
+    char err[255];
+    liberasurecode_errstr(ret, "Reconstruct ERROR: ", err);
+    PyErr_SetString(PyECLibError, err);
     reconstructed = NULL;
   } else {
     reconstructed = PY_BUILDVALUE_OBJ_LEN(c_reconstructed, fragment_len);
@@ -581,6 +611,7 @@ pyeclib_c_decode(PyObject *self, PyObject *args)
   PyObject *fragments = NULL;             /* param, list of missing indexes */
   PyObject *ret_payload = NULL;           /* object to store original payload or ranges of payload */
   PyObject *ranges = NULL;                /* a list of tuples that represent byte ranges */
+  PyObject *metadata_checks_obj = NULL;   /* boolean specifying if headers should be validated before decode */
   pyeclib_byte_range_t *c_ranges = NULL;  /* the byte ranges */
   int num_ranges = 0;                     /* number of specified ranges */
   int fragment_len;                       /* param, size in bytes of fragment */
@@ -590,13 +621,26 @@ pyeclib_c_decode(PyObject *self, PyObject *args)
   uint64_t range_payload_size = 0;        /* length of buffer used to store byte ranges */
   uint64_t orig_data_size = 0;            /* data size in bytes ,from fragment hdr */
   int i = 0;                              /* counters */
+  int force_metadata_checks = 0;          /* validate the fragment headers before decoding */
   int ret = 0;
 
   /* Obtain and validate the method parameters */
-  if (!PyArg_ParseTuple(args, "OOi|O", &pyeclib_obj_handle, &fragments, &fragment_len, &ranges)) {
+  if (!PyArg_ParseTuple(args, "OOi|OO",&pyeclib_obj_handle, &fragments,
+    &fragment_len, &ranges, &metadata_checks_obj)) {
     PyErr_SetString(PyECLibError, "Invalid arguments passed to pyeclib.decode");
     return NULL;
   }
+
+  /* If Python filled in None, we may get a reference.  If so, set the pointer to NULL */
+  if (NULL != ranges && ranges == Py_None) {
+    ranges = NULL;
+  }
+
+  /* Liberasurecode wants an integer, so convert the PyBool to an integer */
+  if (NULL != metadata_checks_obj && PyObject_IsTrue(metadata_checks_obj)) {
+    force_metadata_checks = 1; 
+  }
+
   pyeclib_handle = (pyeclib_t*)PyCapsule_GetPointer(pyeclib_obj_handle, PYECC_HANDLE_NAME);
   if (pyeclib_handle == NULL) {
     PyErr_SetString(PyECLibError, "Invalid handle passed to pyeclib.decode");
@@ -656,13 +700,21 @@ pyeclib_c_decode(PyObject *self, PyObject *args)
     Py_ssize_t len = 0;
     PyBytes_AsStringAndSize(tmp_data, &(c_fragments[i]), &len);
   }
-  
+
   ret = liberasurecode_decode(pyeclib_handle->ec_desc, 
                             c_fragments,
                             num_fragments,
                             fragment_len,
+                            force_metadata_checks,
                             &c_orig_payload,
                             &orig_data_size);
+
+  if (ret < 0) {
+    char err[255];
+    liberasurecode_errstr(ret, "Decode ERROR: ", err);
+    PyErr_SetString(PyECLibError, err);
+    goto error;
+  }
 
   if (num_ranges == 0) {
     ret_payload = PY_BUILDVALUE_OBJ_LEN(c_orig_payload, orig_data_size);
@@ -698,6 +750,159 @@ exit:
 }
 
 
+static const char* chksum_type_to_str(uint8_t chksum_type)
+{
+  const char *chksum_type_str = NULL;
+  switch (chksum_type)
+  {
+    case CHKSUM_NONE: 
+      chksum_type_str = "none\0";
+      break;
+    case CHKSUM_CRC32:
+      chksum_type_str = "crc32\0";
+      break;
+    case CHKSUM_MD5:
+      chksum_type_str = "md5\0";
+      break;
+    default:
+      chksum_type_str = "unknown\0";
+  }
+
+  return chksum_type_str;
+}
+
+static int chksum_length(uint8_t chksum_type)
+{
+  int length = 0;
+  switch (chksum_type)
+  {
+    case CHKSUM_NONE: 
+      // None
+      break;
+    case CHKSUM_CRC32:
+      // CRC 32
+      length = 4;
+      break;
+    case CHKSUM_MD5:
+      // MD5
+      length = 16;
+      break;
+    default:
+      length = 0;
+  }
+  return length;
+}
+
+static const char* backend_id_to_str(uint8_t backend_id)
+{
+  const char *backend_id_str = NULL;
+  switch (backend_id)
+  {
+    case 0:
+      backend_id_str = "null\0";
+      break;
+    case 1:
+      backend_id_str = "jerasure_rs_vand\0";
+      break;
+    case 2:
+      backend_id_str = "jerasure_rs_cauchy\0";
+      break;
+    case 3:
+      backend_id_str = "flat_xor_hd\0";
+      break;
+    case 4:
+      backend_id_str = "isa_l_rs_vand\0";
+      break;
+    default:
+      backend_id_str = "unknown\0";
+  }
+
+  return backend_id_str;
+}
+
+static char*
+hex_encode_string(char *buf, uint32_t buf_len)
+{
+  char *hex_encoded_buf = (char*)alloc_zeroed_buffer((buf_len * 2) + 1);
+  char *hex_encoded_ptr = hex_encoded_buf;
+  int i;
+
+  for (i = 0; i < buf_len; i++) {
+    hex_encoded_ptr += sprintf(hex_encoded_ptr, "%.2x", (unsigned char)buf[i]); 
+  }
+
+  hex_encoded_buf[buf_len * 2] = 0;
+ 
+  return hex_encoded_buf; 
+}
+
+static PyObject*
+fragment_metadata_to_dict(fragment_metadata_t *fragment_metadata)
+{
+  PyObject* metadata_dict = NULL;
+  metadata_dict = PyDict_New();
+
+  if (metadata_dict == NULL) {
+    PyErr_SetString(PyECLibError, "Could not allocate dictionary for fragment metadata");
+    return NULL;
+  }
+
+  if (PyDict_SetItemString(metadata_dict, "index", 
+      PyLong_FromLong((unsigned long)fragment_metadata->idx)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing index from fragment metadata");
+    return NULL;
+  }
+  
+  if (PyDict_SetItemString(metadata_dict, "size", 
+      PyLong_FromLong(fragment_metadata->size)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing size from fragment metadata");
+    return NULL;
+  }
+  
+  if (PyDict_SetItemString(metadata_dict, "orig_data_size", 
+      PyLong_FromLong(fragment_metadata->orig_data_size)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing orig_data_size from fragment metadata");
+    return NULL;
+  }
+  
+  const char *chksum_type_str = chksum_type_to_str(fragment_metadata->chksum_type); 
+  if (PyDict_SetItemString(metadata_dict, "chksum_type", 
+      PyString_FromString(chksum_type_str)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing chksum_type from fragment metadata");
+    return NULL;
+  }
+
+  char *encoded_chksum = hex_encode_string((char*)fragment_metadata->chksum, 
+                                            chksum_length(fragment_metadata->chksum_type));
+  if (PyDict_SetItemString(metadata_dict, "chksum", 
+      PyString_FromString(encoded_chksum)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing chksum from fragment metadata");
+    return NULL;
+  }
+  
+  if (PyDict_SetItemString(metadata_dict, "chksum_mismatch", 
+      PyLong_FromLong((unsigned long)fragment_metadata->chksum_mismatch)) < 0) {
+
+    PyErr_SetString(PyECLibError, "Error parsing chksum mismatch from fragment metadata");
+    return NULL;
+  }
+  
+  const char *backend_id_str = backend_id_to_str(fragment_metadata->backend_id);
+  if (PyDict_SetItemString(metadata_dict, "backend_id", 
+      PyString_FromString(backend_id_str)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing backend id from fragment metadata");
+    return NULL;
+  }
+  
+  if (PyDict_SetItemString(metadata_dict, "backend_version", 
+    PyLong_FromLong((unsigned long)fragment_metadata->backend_version)) < 0) {
+    PyErr_SetString(PyECLibError, "Error parsing backend version from fragment metadata");
+    return NULL;
+  }
+
+  return metadata_dict;
+}
+
 /**
  * Obtain the metadata from a fragment.
  * 
@@ -714,10 +919,12 @@ pyeclib_c_get_metadata(PyObject *self, PyObject *args)
   char *fragment = NULL;                            /* param, fragment from caller */
   fragment_metadata_t c_fragment_metadata;          /* structure to hold metadata */
   PyObject *fragment_metadata = NULL;               /* metadata object to return */
+  int fragment_len;                                 /* fragment length */
+  int formatted;                                    /* format the metadata in a dict */
   int ret;
 
   /* Obtain and validate the method parameters */
-  if (!PyArg_ParseTuple(args, GET_METADATA_ARGS, &pyeclib_obj_handle, &fragment)) {
+  if (!PyArg_ParseTuple(args, GET_METADATA_ARGS, &pyeclib_obj_handle, &fragment, &fragment_len, &formatted)) {
     PyErr_SetString(PyECLibError, "Invalid arguments passed to pyeclib.get_metadata");
     return NULL;
   }
@@ -730,16 +937,21 @@ pyeclib_c_get_metadata(PyObject *self, PyObject *args)
   ret = liberasurecode_get_fragment_metadata(fragment, &c_fragment_metadata);
 
   if (ret < 0) {
+    char err[255];
+    liberasurecode_errstr(ret, "Get_Fragment_Metadata ERROR: ", err);
+    PyErr_SetString(PyECLibError, err);
     fragment_metadata = NULL;
-    PyErr_SetString(PyECLibError, "Failed to get metadata in pyeclib.get_metadata");
   } else {
-    fragment_metadata = PY_BUILDVALUE_OBJ_LEN((char*)&c_fragment_metadata, 
-                                                 sizeof(fragment_metadata_t));                                                  
+    if (formatted) {
+      fragment_metadata = fragment_metadata_to_dict(&c_fragment_metadata);
+    } else {
+      fragment_metadata = PY_BUILDVALUE_OBJ_LEN((char*)&c_fragment_metadata, 
+                                                  sizeof(fragment_metadata_t));                                                  
+    }
   }
 
   return fragment_metadata;
 }
-
 
 /**
  * Confirm the health of the fragment metadata.
@@ -749,7 +961,9 @@ pyeclib_c_get_metadata(PyObject *self, PyObject *args)
  * 
  * @param pyeclib_obj_handle
  * @param fragment_metadata_list list of fragment metadata headers
- * @return -1 if no errors, or the index of the first problem checksum
+ * @return dictionary containing 'status', 'reason' and 'bad_fragments', depending 
+ *         on the status
+ *         NULL if the metadata could not be checked by the liberasurecode
  */
 static PyObject*
 pyeclib_c_check_metadata(PyObject *self, PyObject *args)
@@ -757,8 +971,8 @@ pyeclib_c_check_metadata(PyObject *self, PyObject *args)
   PyObject *pyeclib_obj_handle = NULL;
   pyeclib_t *pyeclib_handle = NULL;
   PyObject *fragment_metadata_list = NULL;                /* param, fragment metadata */
+  fragment_metadata_t *c_fragment_metadata = NULL;        /* metadata buffer for a single fragment */
   char **c_fragment_metadata_list = NULL;                 /* c version of metadata */
-  int fragment_metadata_size;                             /* size of the metadata payload */
   int num_fragments;                                      /* k + m from EC algorithm */
   int k, m;                                               /* EC algorithm params */
   int size;                                               /* size for buf allocation */
@@ -766,8 +980,9 @@ pyeclib_c_check_metadata(PyObject *self, PyObject *args)
   PyObject *ret_obj = NULL;                               /* python long to return */
   int i = 0;                                              /* a counter */
 
+
   /* Obtain and validate the method parameters */
-  if (!PyArg_ParseTuple(args, "OOi", &pyeclib_obj_handle, &fragment_metadata_list, &fragment_metadata_size)) {
+  if (!PyArg_ParseTuple(args, "OO", &pyeclib_obj_handle, &fragment_metadata_list)) {
     PyErr_SetString(PyECLibError, "Invalid arguments passed to pyeclib.encode");
     return NULL;
   }
@@ -800,8 +1015,26 @@ pyeclib_c_check_metadata(PyObject *self, PyObject *args)
   
   ret = liberasurecode_verify_stripe_metadata(pyeclib_handle->ec_desc, c_fragment_metadata_list, 
                                               num_fragments);
-        
-  ret_obj = PyLong_FromLong((long)ret);
+
+  ret_obj = PyDict_New();
+  if (ret == 0) {
+    PyDict_SetItemString(ret_obj, "status", PyLong_FromLong((long)0));
+  } else if (ret == -EINVALIDPARAMS) {
+    PyDict_SetItemString(ret_obj, "status", PyLong_FromLong((long)-EINVALIDPARAMS));
+    PyDict_SetItemString(ret_obj, "reason", PyString_FromString("Invalid arguments"));
+    goto error; 
+  } else if (ret == -EBADCHKSUM) {
+    PyDict_SetItemString(ret_obj, "status", PyLong_FromLong((long)-EINVALIDPARAMS));
+    PyDict_SetItemString(ret_obj, "reason", PyString_FromString("Bad checksum"));
+    PyObject *bad_chksums = PyList_New(0);
+    for (i = 0; i < num_fragments; i++) {
+      c_fragment_metadata = (fragment_metadata_t*)c_fragment_metadata_list[i];
+      if (c_fragment_metadata->chksum_mismatch == 1) {
+        PyList_Append(bad_chksums, PyLong_FromLong((long)c_fragment_metadata->idx));
+      }
+    }
+    PyDict_SetItemString(ret_obj, "bad_fragments", bad_chksums);
+  }
 
   goto exit;
 

@@ -72,16 +72,20 @@ class build(_build):
                 break
         if missing:
             print("***************************************************")
-            print("**                                             ")
-            print("** Can not locate the liberasurecode library:  ")
+            print("**                                                 ")
+            print("** Can not locate the liberasurecode library:      ")
             print("**   %s" % (liberasure_file))
-            print("**                                             ")
-            print("** PyECLib requires that the liberasurecode    ")
-            print("** library be installed. The liberasurecode    ")
-            print("** library can be obtained from:               ")
-            print("** git@bitbucket.org:tsg-/liberasurecode.git")
-            print("**                                             ")
-            print("** Please install liberasurecode and try again.")
+            print("**                                                 ")
+            print("** PyECLib requires that the liberasurecode        ")
+            print("** library be installed.                           ")
+            print("**                                                 ")
+            print("** Please retry after installing liberasurecode:   ")
+            print("**  https://bitbucket.org/tsg-/liberasurecode.git  ")
+            print("**                                                 ")
+            print("** If you have liberasurecode already installed,   ")
+            print("** you may need to run 'sudo ldconfig' to update   ")
+            print("** the loader cache.                               ")
+            print("**                                                 ")
             print("***************************************************")
             sys.exit(1)
 
@@ -129,48 +133,35 @@ class install(_install):
         default_library_paths.insert(0, "%s/usr/local/lib" % installroot)
         _install.run(self)
 
-        #
         # Another Mac-ism...  If the libraries are installed
         # in a strange place, DYLD_LIRBARY_PATH needs to be
         # updated.
-        #
         if platform_str.find("Darwin") > -1:
-            print("***************************************************")
-            print("**                                             ")
-            print("** You are running on a Mac!  This means that  ")
-            print("**                                             ")
-            print("** Any user using this library must update:    ")
-            print("**   DYLD_LIBRARY_PATH                         ")
-            print("**                                             ")
-            print("** The best way to do this is to put this line:")
-            print("**   export DYLD_LIBRARY_PATH=%s" % ("%s/usr/local/lib"
-                                                      % installroot))
-            print("**                                             ")
-            print("** into .bashrc, .profile, or the appropriate")
-            print("** shell start-up script!")
-            print("***************************************************")
+            ldpath_str = "DYLD_LIBRARY_PATH"
         else:
-            print("***************************************************")
-            print("**                                             ")
-            print("** PyECLib libraries have been installed to:   ")
-            print("**   %susr/local/lib" % installroot)
-            print("**                                             ")
-            print("** Any user using this library must update:    ")
-            print("**   LD_LIBRARY_PATH                         ")
-            print("**                                             ")
-            print("** The best way to do this is to put this line:")
-            print("**   export LD_LIBRARY_PATH=%s" % ("%susr/local/lib"
-                                                      % installroot))
-            print("**                                             ")
-            print("** into .bashrc, .profile, or the appropriate shell")
-            print("** start-up script!  Also look at ldconfig(8) man")
-            print("** page for a more static LD configuration")
-            print("***************************************************")
+            ldpath_str = "LD_LIBRARY_PATH"
+        print("***************************************************")
+        print("**                                                 ")
+        print("** PyECLib libraries have been installed to:       ")
+        print("**   %susr/local/lib" % installroot)
+        print("**                                                 ")
+        print("** Any user using this library must update:        ")
+        print("**   %s" % ldpath_str)
+        print("**                                                 ")
+        print("** Run 'ldconfig' or place this line:              ")
+        print("**   export %s=%s" % (ldpath_str, "%susr/local/lib"
+                                     % installroot))
+        print("**                                                 ")
+        print("** into .bashrc, .profile, or the appropriate shell")
+        print("** start-up script!  Also look at ldconfig(8) man  ")
+        print("** page for a more static LD configuration         ")
+        print("**                                                 ")
+        print("***************************************************")
 
 
 module = Extension('pyeclib_c',
-                   define_macros=[('MAJOR VERSION', '0'),
-                                  ('MINOR VERSION', '9')],
+                   define_macros=[('MAJOR VERSION', '1'),
+                                  ('MINOR VERSION', '0')],
                    include_dirs=[default_python_incdir,
                                  '/usr/local/include',
                                  '/usr/local/include/jerasure',
@@ -179,7 +170,7 @@ module = Extension('pyeclib_c',
                                  '/usr/local/include'],
                    library_dirs=default_library_paths,
                    runtime_library_dirs=default_library_paths,
-                   libraries=['Jerasure', 'erasurecode'],
+                   libraries=['erasurecode'],
                    # The extra arguments are for debugging
                    # extra_compile_args=['-g', '-O0'],
                    extra_link_args=['-Wl,-rpath,%s' %
@@ -187,7 +178,7 @@ module = Extension('pyeclib_c',
                    sources=['src/c/pyeclib_c/pyeclib_c.c'])
 
 setup(name='PyECLib',
-      version='0.9.10',
+      version='1.0.5m',
       author='Kevin Greenan',
       author_email='kmgreen2@gmail.com',
       maintainer='Kevin Greenan and Tushar Gohad',
@@ -201,7 +192,7 @@ setup(name='PyECLib',
       license='BSD',
       ext_modules=[module],
       packages=['pyeclib'],
-      package_dir={'pyeclib': 'src/python/pyeclib'},
+      package_dir={'pyeclib': 'pyeclib'},
       cmdclass={'build': build, 'install': install, 'clean': clean},
       py_modules=['pyeclib.ec_iface', 'pyeclib.core'],
       test_suite='test')

@@ -1,4 +1,4 @@
-This is v0.9.10 of PyECLib.  This library provides a simple Python interface for
+This is v1.0 of PyECLib.  This library provides a simple Python interface for
 implementing erasure codes and is known to work with Python v2.6, 2.7 and 3.x.
 
 To obtain the best possible performance, the library utilizes liberasurecode,
@@ -32,15 +32,17 @@ Examples of using this library are provided in "tools" directory:
 
 PyEClib initialization::
 
-  ec_driver = ECDriver("pyeclib.core.ECPyECLibDriver",
-                       k=<num_encoded_data_fragments>,
+  ec_driver = ECDriver(k=<num_encoded_data_fragments>,
                        m=<num_encoded_parity_fragments>,
                        ec_type=<ec_scheme>))
 
 Supported ``ec_type`` values:
 
-  * ``jerasure_rs_vand`` => Vandermonde Reed-Solomon encoding
-  * ``flat_xor_hd_3``, ``flat_xor_hd_4`` => Flat-XOR based HD combination codes
+  * ``jerasure_rs_vand`` => Vandermonde Reed-Solomon encoding, based on Jerasure [1]
+  * ``jerasure_rs_cauchy`` => Cauchy Reed-Solomon encoding (Jerasure variant), based on Jerasure [2]
+  * ``flat_xor_hd_3``, ``flat_xor_hd_4`` => Flat-XOR based HD combination codes, liberasurecode [3]
+  * ``isa_l_rs_vand`` => Intel Storage Acceleration Library (ISA-L) - SIMD accelerated Erasure Coding backends [4]
+  * ``shss`` => NTT Lab Japan's Erasure Coding Library
 
 A configuration utility is provided to help compare available EC schemes in 
 terms of performance and redundancy:: tools/pyeclib_conf_tool.py
@@ -79,13 +81,21 @@ needs to be taken when handling input to and output from the ``encode()`` and
   Reconstruct "missing_fragment_indexes" using "available_fragment_payloads"::
 
     def reconstruct(self, available_fragment_payloads, missing_fragment_indexes)
+
     
 
+- Minimum parity fragments needed for durability gurantees::
+    
+    def min_parity_fragments_needed(self)
+
+
+ 
 - Fragments needed for EC Reconstruct
 
   Return the indexes of fragments needed to reconstruct "missing_fragment_indexes"::
 
     def fragments_needed(self, missing_fragment_indexes)
+
 
 
 - Get EC Metadata
@@ -95,11 +105,13 @@ needs to be taken when handling input to and output from the ``encode()`` and
     def get_metadata(self, fragment)
 
 
+
 - Verify EC Stripe Consistency
 
   Use opaque buffers from get_metadata() to verify a the consistency of a stripe::
 
     def verify_stripe_metadata(self, fragment_metadata_list)
+
 
 
 - Get EC Segment Info
@@ -109,16 +121,37 @@ needs to be taken when handling input to and output from the ``encode()`` and
     def get_segment_info(self, data_len, segment_size)
 
 
-Quick Start:
 
-  Standard stuff to install::
+- Get EC Segment Info given a data length and segment size::
+
+    def get_segment_info_byterange(self, ranges, data_len, segment_size)
+
+  Assume a range request is given for an object with segment size 3K and
+  a 1 MB file:
+
+  Ranges = (0, 1), (1, 12), (10, 1000), (0, segment_size-1),
+                 (1, segment_size+1), (segment_size-1, 2*segment_size)
+
+  This will return a map keyed on the ranges, where there is a recipe
+  given for each range:
+
+  {
+     (0, 1): {0: (0, 1)},
+     (10, 1000): {0: (10, 1000)},
+     (1, 12): {0: (1, 12)},
+     (0, 3071): {0: (0, 3071)},
+     (3071, 6144): {0: (3071, 3071), 1: (0, 3071), 2: (0, 0)},
+     (1, 3073): {0: (1, 3071), 1: (0,0)}
+  }
+
+
+Quick Start
+
+  Install pre-requisites:
   
-    ``Python 2.6``, ``2.7`` or ``3.x`` (including development packages), ``argparse`` and ``liberasurecode``.
-
-
-  As mentioned above, PyECLib depends on the installation of the liberasurecde library (liberasurecode
-  can be found at http://bitbucket.org/elambert/liberasurecode).
-
+    * Python 2.6, 2.7 or 3.x (including development packages), argparse, setuptools
+    * liberasurecode v1.0.4 or greater [3]
+    * Erasure code backend libraries, gf-complete and Jerasure [1],[2], ISA-L [4] etc
 
   Install PyECLib::
 
@@ -126,7 +159,7 @@ Quick Start:
 
   Run test suite included::
 
-    $ sudo python setup.py test && (cd test; ./ec_pyeclib_file_test.sh)
+    $ ./.unittests
 
   If all of this works, then you should be good to go.  If not, send us an email!
 
@@ -136,9 +169,22 @@ Quick Start:
 
     /etc/ld.so.conf 
 
-  and then run::
+  and then make sure to run::
 
-    $ ldconfig
+    $ sudo ldconfig
+
+
+References
+
+ [1] Jerasure, C library that supports erasure coding in storage applications, http://jerasure.org
+
+ [2] Greenan, Kevin M et al, "Flat XOR-based erasure codes in storage systems", http://www.kaymgee.com/Kevin_Greenan/Publications_files/greenan-msst10.pdf
+
+ [3] liberasurecode, C API abstraction layer for erasure coding backends, https://bitbucket.org/tsg-/liberasurecode
+
+ [4] Intel(R) Storage Acceleration Library (Open Source Version), https://01.org/intel%C2%AE-storage-acceleration-library-open-source-version
+
+ [5] Kota Tsuyuzaki <tsuyuzaki.kota@lab.ntt.co.jp>, Ryuta Kon <kon.ryuta@po.ntts.co.jp>, "NTT SHSS Erasure Coding backend"
 
 --
-0.10
+1.0

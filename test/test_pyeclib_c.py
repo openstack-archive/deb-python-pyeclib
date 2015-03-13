@@ -31,6 +31,22 @@ import pyeclib_c
 from pyeclib.ec_iface import PyECLib_EC_Types
 
 
+def collect_available_backends():
+    available_backends = []
+    for ec_type in PyECLib_EC_Types:
+        try:
+           if ec_type == PyECLib_EC_Types.flat_xor_hd:
+                handle = pyeclib_c.init(10, 5, ec_type.value, 3)
+           else:
+                handle = pyeclib_c.init(10, 4, ec_type.value)
+           available_backends.append(ec_type.name)
+           print ec_type.name
+        except:
+            pass
+    return available_backends
+
+_available_backends = collect_available_backends()
+
 class Timer:
 
     def __init__(self):
@@ -50,8 +66,8 @@ class Timer:
         self.end_time = time.time()
         return self.curr_delta()
 
-
 class TestPyECLib(unittest.TestCase):
+
 
     def __init__(self, *args):
         self.num_datas = [12, 12, 12]
@@ -59,10 +75,16 @@ class TestPyECLib(unittest.TestCase):
         self.iterations = 100
 
         # EC algorithm and config parameters
-        self.rs_types = [(PyECLib_EC_Types.jerasure_rs_vand), (PyECLib_EC_Types.jerasure_rs_cauchy)]
+        self.rs_types = [(PyECLib_EC_Types.jerasure_rs_vand),
+                         (PyECLib_EC_Types.jerasure_rs_cauchy),
+                         (PyECLib_EC_Types.isa_l_rs_vand)]
         self.xor_types = [(PyECLib_EC_Types.flat_xor_hd, 12, 6, 4),
                           (PyECLib_EC_Types.flat_xor_hd, 10, 5, 4),
                           (PyECLib_EC_Types.flat_xor_hd, 10, 5, 3)]
+        self.shss = [(PyECLib_EC_Types.shss, 6, 3),
+                     (PyECLib_EC_Types.shss, 10, 4),
+                     (PyECLib_EC_Types.shss, 20, 4),
+                     (PyECLib_EC_Types.shss, 11, 7)]
 
         # Input temp files for testing
         self.sizes = ["101-K", "202-K", "303-K"]
@@ -184,7 +206,7 @@ class TestPyECLib(unittest.TestCase):
 
         fragments = pyeclib_c.encode(handle, whole_file_bytes)
         orig_fragments = fragments[:]
-        
+
         for i in range(iterations):
             missing_idxs = []
             num_missing = hd - 1
@@ -268,8 +290,12 @@ class TestPyECLib(unittest.TestCase):
         return format(throughput, '.10g')
 
     def test_xor_code(self):
+        if "flat_xor_hd" not in _available_backends:
+            print("xor backend is not available in your enviromnet, skipping test")
+            return
+
         for (ec_type, k, m, hd) in self.xor_types:
-            print(("\nRunning tests for %s k=%d, m=%d" % (ec_type, k, m)))
+            print(("\nRunning tests for %s k=%d, m=%d, hd=%d" % (ec_type, k, m, hd)))
 
             for size_str in self.sizes:
                 avg_time = self.time_encode(k, m, ec_type.value, hd,
@@ -288,6 +314,39 @@ class TestPyECLib(unittest.TestCase):
 
             for size_str in self.sizes:
                 success, avg_time = self.time_reconstruct(k, m, ec_type.value, hd,
+                                                          size_str,
+                                                          self.iterations)
+                self.assertTrue(success)
+                print("Reconstruct (%s): %s" %
+                      (size_str, self.get_throughput(avg_time, size_str)))
+
+    def test_shss(self):
+        if "shss" not in _available_backends:
+            print("shss backend is not available in your enviromnet, skipping test")
+            return
+        for (ec_type, k, m) in self.shss:
+            print(("\nRunning tests for %s k=%d, m=%d" % (ec_type, k, m)))
+
+            success = self._test_get_required_fragments(k, m, ec_type)
+            self.assertTrue(success)
+
+            for size_str in self.sizes:
+                avg_time = self.time_encode(k, m, ec_type.value, 0,
+                                            size_str,
+                                            self.iterations)
+                print("Encode (%s): %s" %
+                      (size_str, self.get_throughput(avg_time, size_str)))
+
+            for size_str in self.sizes:
+                success, avg_time = self.time_decode(k, m, ec_type.value, 0,
+                                                     size_str,
+                                                     self.iterations)
+                self.assertTrue(success)
+                print("Decode (%s): %s" %
+                      (size_str, self.get_throughput(avg_time, size_str)))
+
+            for size_str in self.sizes:
+                success, avg_time = self.time_reconstruct(k, m, ec_type.value, 0,
                                                           size_str,
                                                           self.iterations)
                 self.assertTrue(success)
@@ -326,12 +385,16 @@ class TestPyECLib(unittest.TestCase):
                 print(("Unexpected required fragments list "
                        "(exp != req): %s != %s" %
                        (expected_fragments, required_fragments)))
-                #sys.exit(2)
 
         return success
 
     def test_codes(self):
         for ec_type in self.rs_types:
+
+            if ec_type.name not in _available_backends:
+                print("%s backend is not available in your enviromnet, skipping test" % ec_type.name)
+                continue
+
             print(("\nRunning tests for %s" % (ec_type)))
 
             for i in range(len(self.num_datas)):
@@ -367,7 +430,7 @@ class TestPyECLib(unittest.TestCase):
                                                                self.num_parities[i],
                                                                ec_type.value, self.num_parities[i] + 1,
                                                                size_str, self.iterations)
-                                                         
+
                     self.assertTrue(success)
                     print(("Range Decode (%s): %s" %
                            (size_str, self.get_throughput(avg_time, size_str))))
