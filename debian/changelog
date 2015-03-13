@@ -1,3 +1,9 @@
+python-pyeclib (1.0.5m-1) unstable; urgency=medium
+
+  * New upstream release using liberasurecode 1.0.5.
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 13 Mar 2015 23:23:29 +0000
+
 python-pyeclib (0.9.10-3) unstable; urgency=medium
 
   * Fixed the debian/watch file to use the URL from bitbucket.
