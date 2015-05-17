@@ -1,6 +1,7 @@
 python-pyeclib (1.0.7m-1) unstable; urgency=medium
 
   * New upstream release.
+  * Added dh-python as build-depends.
 
  -- Thomas Goirand <zigo@debian.org>  Sun, 17 May 2015 05:55:24 +0200
 
