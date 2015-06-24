@@ -1,3 +1,9 @@
+python-pyeclib (1.0.7m-2) UNRELEASED; urgency=medium
+
+  * d/rules: Enable unit testing for python2.
+
+ -- James Page <james.page@ubuntu.com>  Wed, 24 Jun 2015 10:24:24 +0100
+
 python-pyeclib (1.0.7m-1) unstable; urgency=medium
 
   * New upstream release.
