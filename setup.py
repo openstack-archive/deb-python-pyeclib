@@ -67,6 +67,7 @@ if platform_arch[0].startswith('64') and os.path.exists('%s/lib64' % _exec_prefi
 else:
     default_library_paths.append('%s/lib' % _exec_prefix)
 
+
 # utility routine
 def _read_file_as_str(name):
     with open(name, "rt") as f:
@@ -131,9 +132,6 @@ class install(_install):
         for optname, value in list(opts.items()):
             if value is not None:
                 opts[optname] = os.path.abspath(value)
-
-        prefix = opts['exec_prefix']
-        root = opts['root']
 
         installroot = install_lib.install_dir
 
