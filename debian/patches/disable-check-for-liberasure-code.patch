@@ -9,10 +9,10 @@ Last-Update: 2014-11-14
 
 Index: python-pyeclib/setup.py
 ===================================================================
---- python-pyeclib.orig/setup.py
-+++ python-pyeclib/setup.py
-@@ -90,7 +90,7 @@ class build(_build):
-             sys.exit(1)
+--- python-pyeclib.orig/setup.py	2015-08-05 08:36:06.723555768 +0000
++++ python-pyeclib/setup.py.orig	2015-08-05 08:37:48.001063485 +0000
+@@ -196,7 +196,7 @@
+                 sys.exit(-1)
  
      def run(self):
 -        self.check_liberasure()

@@ -9,7 +9,7 @@ Index: python-pyeclib/setup.py
 ===================================================================
 --- python-pyeclib.orig/setup.py
 +++ python-pyeclib/setup.py
-@@ -173,8 +173,6 @@ module = Extension('pyeclib_c',
+@@ -267,8 +267,6 @@ module = Extension('pyeclib_c',
                     libraries=['erasurecode'],
                     # The extra arguments are for debugging
                     # extra_compile_args=['-g', '-O0'],

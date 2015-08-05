@@ -5,6 +5,7 @@ python-pyeclib (1.0.8-1) unstable; urgency=medium
 
   [ Thomas Goirand ]
   * New upstream release.
+  * Rebased patches.
 
  -- Thomas Goirand <zigo@debian.org>  Wed, 05 Aug 2015 08:35:22 +0000
 
