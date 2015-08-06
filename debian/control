@@ -8,7 +8,7 @@ Uploaders: Julien Danjou <acid@debian.org>,
            Gonéri Le Bouder <goneri@debian.org>
 Build-Depends: debhelper (>= 9),
                dh-python,
-               liberasurecode-dev,
+               liberasurecode-dev (>= 1.0.8),
                libgf-complete-dev,
                libjerasure-dev,
                python-all-dev (>= 2.6.6-3~),
