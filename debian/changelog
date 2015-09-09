@@ -1,11 +1,12 @@
-python-pyeclib (1.0.8-3) UNRELEASED; urgency=medium
+python-pyeclib (1.0.8-3) unstable; urgency=medium
 
+  * Team upload.
   * Drop BD's on gf-complete and jerasure dev packages; not required
     due to the runtime nature of backend loading in liberasurecode.
   * d/p/big-endian.patch: Cherry pick fix from upstream VCS to resolve
     issues on big endian architectures.
 
- -- James Page <james.page@ubuntu.com>  Wed, 09 Sep 2015 13:24:15 +0100
+ -- James Page <james.page@ubuntu.com>  Wed, 09 Sep 2015 13:32:08 +0100
 
 python-pyeclib (1.0.8-2) unstable; urgency=medium
 
