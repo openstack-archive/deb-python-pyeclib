@@ -1,3 +1,10 @@
+python-pyeclib (1.0.8-3) UNRELEASED; urgency=medium
+
+  * Drop BD's on gf-complete and jerasure dev packages; not required
+    due to the runtime nature of backend loading in liberasurecode.
+
+ -- James Page <james.page@ubuntu.com>  Wed, 09 Sep 2015 13:24:15 +0100
+
 python-pyeclib (1.0.8-2) unstable; urgency=medium
 
   * Team upload.
