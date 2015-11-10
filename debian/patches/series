@@ -1,4 +1,2 @@
 disable-check-for-liberasure-code.patch
-remove-rpath-tweak.patch
 more-rpath-tweak-removal.patch
-big-endian.patch

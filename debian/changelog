@@ -4,6 +4,10 @@ python-pyeclib (1.1.1-1) unstable; urgency=medium
   * Add --install-liberasurecode=no when installing with "python setup.py
     install".
   * Drop version of python-all-dev build-depends.
+  * Dropped big-endian.patch applied upstream.
+  * Rebased patches:
+    - disable-check-for-liberasure-code.patch
+    - more-rpath-tweak-removal.patch
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 10 Nov 2015 11:08:06 +0000
 
