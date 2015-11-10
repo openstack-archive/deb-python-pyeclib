@@ -1,3 +1,9 @@
+python-pyeclib (1.1.1-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Thomas Goirand <zigo@debian.org>  Tue, 10 Nov 2015 11:08:06 +0000
+
 python-pyeclib (1.0.8-3) unstable; urgency=medium
 
   * Team upload.
