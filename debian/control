@@ -9,7 +9,7 @@ Uploaders: Julien Danjou <acid@debian.org>,
 Build-Depends: debhelper (>= 9),
                dh-python,
                liberasurecode-dev (>= 1.0.8),
-               python-all-dev (>= 2.6.6-3~),
+               python-all-dev,
                python-setuptools,
                python3-all-dev,
                python3-setuptools
