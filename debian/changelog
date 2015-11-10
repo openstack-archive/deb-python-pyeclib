@@ -1,6 +1,8 @@
 python-pyeclib (1.1.1-1) unstable; urgency=medium
 
   * New upstream release.
+  * Add --install-liberasurecode=no when installing with "python setup.py
+    install".
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 10 Nov 2015 11:08:06 +0000
 
