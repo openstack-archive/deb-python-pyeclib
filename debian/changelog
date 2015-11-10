@@ -8,6 +8,7 @@ python-pyeclib (1.1.1-1) unstable; urgency=medium
   * Rebased patches:
     - disable-check-for-liberasure-code.patch
     - more-rpath-tweak-removal.patch
+  * Overrides dh_auto_install, not dh_install.
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 10 Nov 2015 11:08:06 +0000
 
