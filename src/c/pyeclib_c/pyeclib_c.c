@@ -25,15 +25,14 @@
  */
 
 #include <Python.h>
+#include <math.h>
+#include <bytesobject.h>
+#include <liberasurecode/erasurecode.h>
 
 /* Compat layer for python <= 2.6 */
 #include "capsulethunk.h"
 
-#include <erasurecode.h>
-#include <erasurecode_helpers.h>
-#include <math.h>
 #include <pyeclib_c.h>
-#include <bytesobject.h>
 
 /* Python 3 compatibility macros */
 #if PY_MAJOR_VERSION >= 3
@@ -46,7 +45,7 @@
               PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
           ob = PyModule_Create(&moduledef);
   #define PY_BUILDVALUE_OBJ_LEN(obj, objlen) \
-          Py_BuildValue("y#", obj, objlen)
+          Py_BuildValue("y#", obj, (Py_ssize_t)objlen)
   #define PyInt_FromLong PyLong_FromLong
   #define PyString_FromString PyUnicode_FromString
   #define ENCODE_ARGS "Oy#"
@@ -58,7 +57,7 @@
   #define MOD_DEF(ob, name, doc, methods) \
           ob = Py_InitModule3(name, methods, doc);
   #define PY_BUILDVALUE_OBJ_LEN(obj, objlen) \
-          Py_BuildValue("s#", obj, objlen)
+          Py_BuildValue("s#", obj, (Py_ssize_t)objlen)
   #define ENCODE_ARGS "Os#"
   #define GET_METADATA_ARGS "Os#i"
 #endif
@@ -85,6 +84,51 @@ static PyObject *import_class(const char *module, const char *cls)
 {
     PyObject *s = PyImport_ImportModule(module);
     return (PyObject *) PyObject_GetAttrString(s, cls);
+}
+
+/**
+ * Allocate a buffer of a specific size and set its' contents
+ * to the specified value.
+ *
+ * @param size integer size in bytes of buffer to allocate
+ * @param value
+ * @return pointer to start of allocated buffer or NULL on error
+ */
+void * alloc_and_set_buffer(int size, int value) {
+    void * buf = NULL;  /* buffer to allocate and return */
+  
+    /* Allocate and zero the buffer, or set the appropriate error */
+    buf = malloc((size_t) size);
+    if (buf) {
+        buf = memset(buf, value, (size_t) size);
+    }
+    return buf;
+}
+
+/**
+ * Allocate a zero-ed buffer of a specific size.
+ *
+ * @param size integer size in bytes of buffer to allocate
+ * @return pointer to start of allocated buffer or NULL on error
+ */
+void * alloc_zeroed_buffer(int size)
+{
+    return alloc_and_set_buffer(size, 0);
+}
+
+/**
+ * Deallocate memory buffer if it's not NULL.  This methods returns NULL so 
+ * that you can free and reset a buffer using a single line as follows:
+ *
+ * my_ptr = check_and_free_buffer(my_ptr);
+ *
+ * @return NULL
+ */
+void * check_and_free_buffer(void * buf)
+{
+    if (buf)
+        free(buf);
+    return NULL;
 }
 
 void

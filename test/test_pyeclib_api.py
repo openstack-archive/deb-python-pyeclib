@@ -31,7 +31,10 @@ from pyeclib.ec_iface import ECDriverError
 from pyeclib.ec_iface import ECInsufficientFragments
 
 from pyeclib.ec_iface import ECDriver, PyECLib_EC_Types
-from .test_pyeclib_c import _available_backends
+if sys.version < '3':
+    from test_pyeclib_c import _available_backends
+else:
+    from .test_pyeclib_c import _available_backends
 
 if sys.version < '3':
     def b2i(b):
@@ -147,11 +150,25 @@ class TestPyECLibDriver(unittest.TestCase):
                                    chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=8, m=4, ec_type=_type2,
                                    chksum_type=csum))
-        _type3 = 'flat_xor_hd'
-        if _type3 in _available_backends:
-            pyeclib_drivers.append(ECDriver(k=12, m=6, ec_type=_type3,
+        _type3_1 = 'flat_xor_hd'
+        if _type3_1 in _available_backends:
+            pyeclib_drivers.append(ECDriver(k=12, m=6, ec_type=_type3_1,
                                    chksum_type=csum))
-            pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=_type3,
+            pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=_type3_1,
+                                   chksum_type=csum))
+        _type3_2 = 'flat_xor_hd_4'
+        if _type3_2 in _available_backends:
+            pyeclib_drivers.append(ECDriver(k=12, m=6, ec_type=_type3_2,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=_type3_2,
+                                   chksum_type=csum))
+        _type4 = 'shss'
+        if _type4 in _available_backends:
+            pyeclib_drivers.append(ECDriver(k=10, m=4, ec_type=_type4,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=20, m=4, ec_type=_type4,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=11, m=7, ec_type=_type4,
                                    chksum_type=csum))
         return pyeclib_drivers
 
@@ -535,6 +552,7 @@ class TestPyECLibDriver(unittest.TestCase):
         pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type="liberasurecode_rs_vand"))
         self.assertTrue(
             pyeclib_drivers[0].min_parity_fragments_needed() == 1)
+
 
 if __name__ == '__main__':
     unittest.main()
