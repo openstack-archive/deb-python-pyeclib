@@ -1,3 +1,9 @@
+python-pyeclib (1.1.1-2) unstable; urgency=medium
+
+  * Rebuild with liberasurecode 1.1.0.
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 11 Dec 2015 23:54:00 +0000
+
 python-pyeclib (1.1.1-1) unstable; urgency=medium
 
   * New upstream release.
