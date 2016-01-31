@@ -1,3 +1,9 @@
+python-pyeclib (1.1.1-3) UNRELEASED; urgency=medium
+
+  * Added Suggests libjerasure2.
+
+ -- Ondřej Nový <novy@ondrej.org>  Sun, 31 Jan 2016 01:45:15 +0100
+
 python-pyeclib (1.1.1-2) unstable; urgency=medium
 
   * Rebuild with liberasurecode 1.1.0.
