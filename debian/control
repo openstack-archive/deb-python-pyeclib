@@ -14,7 +14,7 @@ Build-Depends: debhelper (>= 9),
                python-setuptools,
                python3-all-dev,
                python3-setuptools
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 Vcs-Browser: https://anonscm.debian.org/cgit/openstack/python-pyeclib.git
 Vcs-Git: https://anonscm.debian.org/git/openstack/python-pyeclib.git
 Homepage: https://bitbucket.org/kmgreen2/pyeclib

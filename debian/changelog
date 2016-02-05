@@ -10,6 +10,7 @@ python-pyeclib (1.2.0-1) UNRELEASED; urgency=medium
   * Removed patch: more-rpath-tweak-removal.patch
   * Removed install-liberasurecode=no option, it's not needed anymore.
   * Fixed d/copyright.
+  * Standards-Version is 3.9.7 now (no change).
 
  -- Ondřej Nový <novy@ondrej.org>  Sun, 31 Jan 2016 01:45:15 +0100
 
