@@ -31,23 +31,15 @@ from .utils import positive_int_value
 def PyECLibVersion(z, y, x):
     return (((z) << 16) + ((y) << 8) + (x))
 
-PYECLIB_MAJOR = 0
-PYECLIB_MINOR = 9
-PYECLIB_REV = 4
+PYECLIB_MAJOR = 1
+PYECLIB_MINOR = 1
+PYECLIB_REV = 2
 PYECLIB_VERSION = PyECLibVersion(PYECLIB_MAJOR, PYECLIB_MINOR,
                                  PYECLIB_REV)
 
 
 PYECLIB_MAX_DATA = 32
 PYECLIB_MAX_PARITY = 32
-
-VALID_EC_TYPES = ['jerasure_rs_vand',
-                  'jerasure_rs_cauchy',
-                  'flat_xor_hd_3',
-                  'flat_xor_hd_4',
-                  'isa_l_rs_vand',
-                  'shss',
-                  'liberasurecode_rs_vand']
 
 
 @unique
@@ -120,6 +112,7 @@ class ECDriver(object):
         self.hd = -1
         self.ec_type = None
         self.chksum_type = None
+        self.validate = False
         for (key, value) in kwargs.items():
             if key == "k":
                 try:
@@ -152,6 +145,9 @@ class ECDriver(object):
                 else:
                     raise ECDriverError(
                         "%s is not a valid checksum type for PyECLib!" % value)
+            elif key == "validate":
+                # validate if the ec type is available (runtime check)
+                self.validate = value
 
         if self.hd == -1:
             self.hd = self.m
@@ -167,7 +163,10 @@ class ECDriver(object):
             m=self.m,
             hd=self.hd,
             ec_type=self.ec_type,
-            chksum_type=self.chksum_type)
+            chksum_type=self.chksum_type,
+            validate=int(self.validate)
+        )
+
         #
         # Verify that the imported library implements the required functions
         #
@@ -460,3 +459,36 @@ class ECInsufficientFragments(ECDriverError):
 # Out of memory
 class ECOutOfMemory(ECDriverError):
     pass
+
+
+# PyECLib helper for "available" EC types
+ALL_EC_TYPES = [
+    'jerasure_rs_vand',
+    'jerasure_rs_cauchy',
+    'flat_xor_hd_3',
+    'flat_xor_hd_4',
+    'isa_l_rs_vand',
+    'shss',
+    'liberasurecode_rs_vand',
+]
+
+
+def _PyECLibValidECTypes():
+    available_ec_types = []
+    for _type in ALL_EC_TYPES:
+        driver = None
+        try:
+            if _type is 'shss':
+                _m = 4
+            else:
+                _m = 5
+            driver = ECDriver(k=10, m=_m, ec_type=_type, validate=True)
+            if driver:
+                available_ec_types.append(_type)
+        except:
+            # ignore any errors, assume backend not available
+            continue
+    return available_ec_types
+
+
+VALID_EC_TYPES = _PyECLibValidECTypes()
