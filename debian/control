@@ -17,6 +17,7 @@ Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/python-pyeclib.git
 Vcs-Git: git://anonscm.debian.org/openstack/python-pyeclib.git
 Homepage: https://bitbucket.org/kmgreen2/pyeclib
+X-Testsuite: autopkgtest
 
 Package: python-pyeclib
 Architecture: any
