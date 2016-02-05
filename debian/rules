@@ -11,11 +11,11 @@ UPSTREAM_GIT = https://bitbucket.org/kmgreen2/pyeclib.git
 
 override_dh_auto_install:
 	set -e ; for pyvers in $(PYTHONS); do \
-		python$$pyvers setup.py install --install-layout=deb --install-liberasurecode=no \
+		python$$pyvers setup.py install --install-layout=deb \
 			--root $(CURDIR)/debian/python-pyeclib; \
 	done
 	set -e ; for pyvers in $(PYTHON3S); do \
-		python$$pyvers setup.py install --install-layout=deb --install-liberasurecode=no \
+		python$$pyvers setup.py install --install-layout=deb \
 			--root $(CURDIR)/debian/python3-pyeclib; \
 	done
 

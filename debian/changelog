@@ -1,10 +1,15 @@
-python-pyeclib (1.1.1-3) UNRELEASED; urgency=medium
+python-pyeclib (1.2.0-1) UNRELEASED; urgency=medium
 
+  * New upstream release.
   * Added Suggests libjerasure2.
   * Added Debian tests.
   * Added myself as uploader.
   * Added myself to copyright file.
   * Fixed Vcs URLs.
+  * Rebased patch: disable-check-for-liberasure-code.patch
+  * Removed patch: more-rpath-tweak-removal.patch
+  * Removed install-liberasurecode=no option, it's not needed anymore.
+  * Fixed d/copyright.
 
  -- Ondřej Nový <novy@ondrej.org>  Sun, 31 Jan 2016 01:45:15 +0100
 
