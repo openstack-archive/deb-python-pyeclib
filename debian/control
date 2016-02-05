@@ -5,7 +5,8 @@ Maintainer: PKG OpenStack <openstack-devel@lists.alioth.debian.org>
 Uploaders: Julien Danjou <acid@debian.org>,
            Thomas Goirand <zigo@debian.org>,
            Mehdi Abaakouk <sileht@sileht.net>,
-           Gonéri Le Bouder <goneri@debian.org>
+           Gonéri Le Bouder <goneri@debian.org>,
+           Ondřej Nový <novy@ondrej.org>,
 Build-Depends: debhelper (>= 9),
                dh-python,
                liberasurecode-dev (>= 1.0.8),

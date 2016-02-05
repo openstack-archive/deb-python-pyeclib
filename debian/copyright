@@ -4,6 +4,7 @@ Source: https://bitbucket.org/kmgreen2/pyeclib
 
 Files: debian/*
 Copyright: (c) 2014, Thomas Goirand <zigo@debian.org>
+           (c) 2016, Ondřej Nový <novy@ondrej.org>
 License: BSD-2-clause
 
 Files: *
