@@ -6,7 +6,7 @@ python-pyeclib (1.2.0-1) UNRELEASED; urgency=medium
   * Added myself as uploader.
   * Added myself to copyright file.
   * Fixed Vcs URLs.
-  * Rebased patch: disable-check-for-liberasure-code.patch
+  * Removed patch: disable-check-for-liberasure-code.patch
   * Removed patch: more-rpath-tweak-removal.patch
   * Removed install-liberasurecode=no option, it's not needed anymore.
   * Fixed d/copyright.
