@@ -2,14 +2,14 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: PyECLib
 Source: https://bitbucket.org/kmgreen2/pyeclib
 
-Files: debian/*
-Copyright: (c) 2014, Thomas Goirand <zigo@debian.org>
-           (c) 2016, Ondřej Nový <novy@ondrej.org>
-License: BSD-2-clause
-
 Files: *
 Copyright: (c) 2013-2014, Kevin Greenan <kmgreen2@gmail.com>
            (c) 2013-2014, Tushar Gohad <tusharsg@gmail.com>
+License: BSD-2-clause
+
+Files: debian/*
+Copyright: (c) 2014, Thomas Goirand <zigo@debian.org>
+           (c) 2016, Ondřej Nový <novy@ondrej.org>
 License: BSD-2-clause
 
 License: BSD-2-clause
