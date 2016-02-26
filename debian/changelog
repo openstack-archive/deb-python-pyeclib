@@ -1,4 +1,4 @@
-python-pyeclib (1.2.0-1) UNRELEASED; urgency=medium
+python-pyeclib (1.2.0-1) unstable; urgency=medium
 
   * New upstream release.
   * Added Suggests libjerasure2.
@@ -12,7 +12,7 @@ python-pyeclib (1.2.0-1) UNRELEASED; urgency=medium
   * Fixed d/copyright.
   * Standards-Version is 3.9.7 now (no change).
 
- -- Ondřej Nový <novy@ondrej.org>  Sun, 31 Jan 2016 01:45:15 +0100
+ -- Ondřej Nový <novy@ondrej.org>  Fri, 26 Feb 2016 22:29:07 +0100
 
 python-pyeclib (1.1.1-2) unstable; urgency=medium
 
