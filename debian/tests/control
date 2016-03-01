@@ -1,3 +1,24 @@
-Tests: encode-decode encode-decode3
+# Internal
+Test-Command: python debian/tests/encode-decode.py liberasurecode_rs_vand
+Depends: python-pyeclib
+
+Test-Command: python3 debian/tests/encode-decode.py liberasurecode_rs_vand
+Depends: python3-pyeclib
+
+# jerasure
+Test-Command: python debian/tests/encode-decode.py jerasure_rs_vand
 Depends: python-pyeclib,
-         python3-pyeclib,
+         libjerasure2,
+
+Test-Command: python3 debian/tests/encode-decode.py jerasure_rs_vand
+Depends: python3-pyeclib,
+         libjerasure2,
+
+# ISA-L
+Test-Command: python debian/tests/encode-decode.py isa_l_rs_vand
+Depends: python-pyeclib,
+         libisal2,
+
+Test-Command: python3 debian/tests/encode-decode.py isa_l_rs_vand
+Depends: python3-pyeclib,
+         libisal2,
