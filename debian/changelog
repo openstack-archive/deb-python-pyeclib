@@ -1,3 +1,9 @@
+python-pyeclib (1.2.0-2~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Ondřej Nový <novy@ondrej.org>  Thu, 14 Apr 2016 14:45:44 +0200
+
 python-pyeclib (1.2.0-2) unstable; urgency=medium
 
   * Tests liberasure backends in Debian tests.
