@@ -3,7 +3,7 @@
 PYTHONS:=$(shell pyversions -vr)
 PYTHON3S:=$(shell py3versions -vr)
 
-UPSTREAM_GIT = https://bitbucket.org/kmgreen2/pyeclib.git
+UPSTREAM_GIT = https://github.com/openstack/pyeclib.git
 -include /usr/share/openstack-pkg-tools/pkgos.make
 
 %:

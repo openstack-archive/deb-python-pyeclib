@@ -1,3 +1,9 @@
+python-pyeclib (1.2.0-3) UNRELEASED; urgency=medium
+
+  * Upstream moved to official Openstack project
+
+ -- Ondřej Nový <novy@ondrej.org>  Wed, 01 Jun 2016 14:29:00 +0200
+
 python-pyeclib (1.2.0-2) unstable; urgency=medium
 
   * Tests liberasure backends in Debian tests.
