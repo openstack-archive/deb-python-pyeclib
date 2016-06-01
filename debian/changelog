@@ -1,7 +1,8 @@
 python-pyeclib (1.2.1-1) UNRELEASED; urgency=medium
 
-  * New upstream release.
+  * New upstream release
   * Upstream moved to official Openstack project
+  * Bump liberasurecode-dev dependency to 1.2.0 version
 
  -- Ondřej Nový <novy@ondrej.org>  Wed, 01 Jun 2016 14:29:00 +0200
 
