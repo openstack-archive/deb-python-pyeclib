@@ -3,6 +3,6 @@ import sys
 
 input = b'test'
 
-ec = ECDriver(k=2, m=1, ec_type=sys.argv[1])
+ec = ECDriver(k=3, m=3, hd=3, ec_type=sys.argv[1])
 fragments = ec.encode(input)
-assert ec.decode(fragments[0:2]) == input
+assert ec.decode(fragments[0:ec.k]) == input

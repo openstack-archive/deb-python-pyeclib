@@ -1,11 +1,18 @@
-# Internal
+# Internal - Reed-Solomon
 Test-Command: python debian/tests/encode-decode.py liberasurecode_rs_vand
 Depends: python-pyeclib
 
 Test-Command: python3 debian/tests/encode-decode.py liberasurecode_rs_vand
 Depends: python3-pyeclib
 
-# jerasure
+# Internal - Flat XOR HD
+Test-Command: python debian/tests/encode-decode.py flat_xor_hd
+Depends: python-pyeclib,
+
+Test-Command: python3 debian/tests/encode-decode.py flat_xor_hd
+Depends: python3-pyeclib,
+
+# Jerasure
 Test-Command: python debian/tests/encode-decode.py jerasure_rs_vand
 Depends: python-pyeclib,
          libjerasure2,
