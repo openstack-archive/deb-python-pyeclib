@@ -4,6 +4,7 @@ python-pyeclib (1.2.1-1) UNRELEASED; urgency=medium
   * Upstream moved to official Openstack project
   * Bump liberasurecode-dev dependency to 1.2.0 version
   * Added Flat XOR HD backend to Debian test
+  * Print debug info in Debian test
 
  -- Ondřej Nový <novy@ondrej.org>  Wed, 01 Jun 2016 14:29:00 +0200
 
