@@ -1,3 +1,9 @@
+python-pyeclib (1.2.1-1~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Ondřej Nový <novy@ondrej.org>  Tue, 07 Jun 2016 23:15:46 +0200
+
 python-pyeclib (1.2.1-1) unstable; urgency=medium
 
   * New upstream release
