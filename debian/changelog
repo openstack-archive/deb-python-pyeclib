@@ -1,11 +1,11 @@
-python-pyeclib (1.2.1-2) UNRELEASED; urgency=medium
+python-pyeclib (1.2.1-2) unstable; urgency=medium
 
   * d/{control,copyright}: Use my @debian.org email address
   * Fixed .gitreview file
   * d/s/options: extend-diff-ignore of .gitreview
   * d/control: Using OpenStack's Gerrit as VCS URLs.
 
- -- Ondřej Nový <onovy@debian.org>  Mon, 20 Jun 2016 20:07:32 +0200
+ -- Ondřej Nový <onovy@debian.org>  Fri, 23 Sep 2016 21:03:05 +0200
 
 python-pyeclib (1.2.1-1) unstable; urgency=medium
 
