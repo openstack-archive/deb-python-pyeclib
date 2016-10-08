@@ -21,7 +21,6 @@ Homepage: https://github.com/openstack/pyeclib
 
 Package: python-pyeclib
 Architecture: any
-Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}
 Description: interface for implementing erasure codes - Python 2.x
  This library provides a simple Python interface for implementing erasure
@@ -40,7 +39,6 @@ Description: interface for implementing erasure codes - Python 2.x
 
 Package: python3-pyeclib
 Architecture: any
-Pre-Depends: dpkg (>= 1.15.6~)
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
 Description: interface for implementing erasure codes - Python 3.x
  This library provides a simple Python interface for implementing erasure

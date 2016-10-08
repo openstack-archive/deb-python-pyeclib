@@ -229,11 +229,22 @@ Quick Start
   Install pre-requisites:
   
     * Python 2.6, 2.7 or 3.x (including development packages), argparse, setuptools
-    * liberasurecode v1.1.0 or greater [3]
+    * liberasurecode v1.2.0 or greater [3]
     * Erasure code backend libraries, gf-complete and Jerasure [1],[2], ISA-L [4] etc
 
-  Install PyECLib::
+    An example for ubuntu to install dependency packages:
+      $ sudo apt-get install build-essential python-dev python-pip liberasurecode-dev
+      $ sudo pip install -U bindep -r test-requirement.txt
 
+    If you want to confirm all dependency packages installed succuessfully, try:
+      $ sudo bindep -f bindep.txt
+
+    That shows missing dependency packages for you, http://docs.openstack.org/infra/bindep/
+
+    *Note*: currently liberasurecode-dev/liberasurecode-devel in package repo is older
+            than v1.2.0
+
+  Install PyECLib::
     $ sudo python setup.py install
 
   Run test suite included::
@@ -259,7 +270,7 @@ References
 
  [2] Greenan, Kevin M et al, "Flat XOR-based erasure codes in storage systems", http://www.kaymgee.com/Kevin_Greenan/Publications_files/greenan-msst10.pdf
 
- [3] liberasurecode, C API abstraction layer for erasure coding backends, https://bitbucket.org/tsg-/liberasurecode
+ [3] liberasurecode, C API abstraction layer for erasure coding backends, https://github.com/openstack/liberasurecode
 
  [4] Intel(R) Storage Acceleration Library (Open Source Version), https://01.org/intel%C2%AE-storage-acceleration-library-open-source-version
 

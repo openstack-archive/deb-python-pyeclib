@@ -26,6 +26,9 @@ from string import ascii_letters, ascii_uppercase, digits
 import sys
 import tempfile
 import unittest
+
+from distutils.version import StrictVersion
+
 from pyeclib.ec_iface import ECBackendNotSupported
 from pyeclib.ec_iface import ECDriver
 from pyeclib.ec_iface import ECDriverError
@@ -34,6 +37,9 @@ from pyeclib.ec_iface import ECInvalidFragmentMetadata
 from pyeclib.ec_iface import PyECLib_EC_Types
 from pyeclib.ec_iface import ALL_EC_TYPES
 from pyeclib.ec_iface import VALID_EC_TYPES
+from pyeclib.ec_iface import LIBERASURECODE_VERSION
+import resource
+
 
 if sys.version < '3':
     def b2i(b):
@@ -108,6 +114,34 @@ class TestPyECLibDriver(unittest.TestCase):
 
     def tearDown(self):
         pass
+
+    def test_invalid_km_args(self):
+        for ec_type in VALID_EC_TYPES:
+            # missing k
+            with self.assertRaises(ECDriverError) as err_context:
+                ECDriver(ec_type=ec_type, m=1)
+
+            self.assertEqual(str(err_context.exception),
+                             "Invalid Argument: k is required")
+
+            # missing m
+            with self.assertRaises(ECDriverError) as err_context:
+                ECDriver(ec_type=ec_type, k=1)
+
+            self.assertEqual(str(err_context.exception),
+                             "Invalid Argument: m is required")
+
+            with self.assertRaises(ECDriverError) as err_context:
+                # m is smaller than 1
+                ECDriver(ec_type=ec_type, k=-100, m=1)
+            self.assertEqual(str(err_context.exception),
+                             "Invalid number of data fragments (k)")
+
+            with self.assertRaises(ECDriverError) as err_context:
+                # m is smaller than 1
+                ECDriver(ec_type=ec_type, k=1, m=-100)
+            self.assertEqual(str(err_context.exception),
+                             "Invalid number of data fragments (m)")
 
     def test_valid_ec_types(self):
         # Build list of available types and compare to VALID_EC_TYPES
@@ -531,6 +565,11 @@ class TestPyECLibDriver(unittest.TestCase):
                       (first_fragment_to_corrupt + i) % len(fragments) for i in range(num_to_corrupt)
                     ]
 
+                    if StrictVersion(LIBERASURECODE_VERSION) < \
+                            StrictVersion('1.2.0'):
+                        # if liberasurecode is older than the version supports
+                        # fragment integrity check, skip following test
+                        continue
                     i = 0
                     for fragment in fragments:
                       if i in fragments_to_corrupt:
@@ -572,6 +611,28 @@ class TestPyECLibDriver(unittest.TestCase):
                 pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=ec_type))
                 self.assertTrue(
                     pyeclib_drivers[0].min_parity_fragments_needed() == 1)
+
+    def test_get_segment_info_memory_usage(self):
+        for ec_driver in self.get_pyeclib_testspec():
+            self._test_get_segment_info_memory_usage(ec_driver)
+
+    def _test_get_segment_info_memory_usage(self, ec_driver):
+        # 1. Preapre the expected memory allocation
+        info = ec_driver.get_segment_info(1024*1024, 1024*1024)
+        info = None
+        loop_range = range(1000)
+
+        # 2. Get current memory usage
+        usage = resource.getrusage(resource.RUSAGE_SELF)[2]
+
+        # 3. Loop to call get_segment_info
+        for x in loop_range:
+            ec_driver.get_segment_info(1024*1024, 1024*1024)
+
+        # 4. memory usage shoudln't be increased
+        self.assertEqual(usage, resource.getrusage(resource.RUSAGE_SELF)[2],
+                         'Memory usage is increased unexpectedly %s - %s' %
+                         (usage, resource.getrusage(resource.RUSAGE_SELF)[2]))
 
 
 if __name__ == '__main__':

@@ -85,6 +85,7 @@ static PyObject * pyeclib_c_reconstruct(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_decode(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_get_metadata(PyObject *self, PyObject *args);
 static PyObject * pyeclib_c_check_metadata(PyObject *self, PyObject *args);
+static PyObject * pyeclib_c_liberasurecode_version(PyObject *self, PyObject *args);
 
 static PyObject *import_class(const char *module, const char *cls)
 {
@@ -353,6 +354,19 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
   PyObject *pyeclib_obj_handle = NULL;
   pyeclib_t *pyeclib_handle = NULL;
   PyObject *ret_dict = NULL;               /* python dictionary to return */
+
+  // Prepare variables for return dict to cleanup on exit
+  PyObject *segment_size_key = NULL;
+  PyObject *segment_size_value = NULL;
+  PyObject *last_segment_size_key = NULL;
+  PyObject *last_segment_size_value = NULL;
+  PyObject *fragment_size_key = NULL;
+  PyObject *fragment_size_value = NULL;
+  PyObject *last_fragment_size_key = NULL;
+  PyObject *last_fragment_size_value = NULL;
+  PyObject *num_segments_key = NULL;
+  PyObject *num_segments_value = NULL;
+
   int data_len;                            /* data length from user in bytes */
   int segment_size, last_segment_size;     /* segment sizes in bytes */
   int num_segments;                        /* total number of segments */
@@ -372,6 +386,10 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
 
   /* The minimum segment size depends on the EC algorithm */
   min_segment_size = liberasurecode_get_minimum_encode_size(pyeclib_handle->ec_desc);
+  if (min_segment_size < 0) {
+      pyeclib_c_seterr(-EINVALIDPARAMS, "pyeclib_c_get_segment_info ERROR: ");
+      return NULL;
+  }
 
   /* Get the number of segments */
   num_segments = (int)ceill((double)data_len / segment_size);
@@ -395,7 +413,12 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
      * This will retrieve fragment_size calculated by liberasurecode with
      * specified backend.
      */
+
     fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, data_len);
+    if (fragment_size < 0) {
+        pyeclib_c_seterr(-EINVALIDPARAMS, "pyeclib_c_get_segment_info ERROR: ");
+	return NULL;
+    }
 
     /* Segment size is the user-provided segment size */
     segment_size = data_len;
@@ -408,6 +431,10 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
      */
 
     fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, segment_size);
+    if (fragment_size < 0) {
+        pyeclib_c_seterr(-EINVALIDPARAMS, "pyeclib_c_get_segment_info ERROR: ");
+	return NULL;
+    }
 
     last_segment_size = data_len - (segment_size * (num_segments - 1)); 
 
@@ -424,6 +451,10 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
     } 
     
     last_fragment_size = liberasurecode_get_fragment_size(pyeclib_handle->ec_desc, last_segment_size);
+    if (fragment_size < 0) {
+        pyeclib_c_seterr(-EINVALIDPARAMS, "pyeclib_c_get_segment_info ERROR: ");
+	return NULL;
+    }
   }
 
   /* Add header to fragment sizes */
@@ -433,16 +464,49 @@ pyeclib_c_get_segment_info(PyObject *self, PyObject *args)
   /* Create and return the python dictionary of segment info */
   ret_dict = PyDict_New();
   if (NULL == ret_dict) {
-    pyeclib_c_seterr(-ENOMEM, "pyeclib_c_get_segment_info ERROR: ");
+    goto error;
   } else {
-    PyDict_SetItem(ret_dict, PyString_FromString("segment_size\0"), PyInt_FromLong(segment_size));
-    PyDict_SetItem(ret_dict, PyString_FromString("last_segment_size\0"), PyInt_FromLong(last_segment_size));
-    PyDict_SetItem(ret_dict, PyString_FromString("fragment_size\0"), PyInt_FromLong(fragment_size));
-    PyDict_SetItem(ret_dict, PyString_FromString("last_fragment_size\0"), PyInt_FromLong(last_fragment_size));
-    PyDict_SetItem(ret_dict, PyString_FromString("num_segments\0"), PyInt_FromLong(num_segments));
+    if((segment_size_key = PyString_FromString("segment_size\0")) == NULL ||
+       (segment_size_value = PyInt_FromLong(segment_size)) == NULL ||
+       PyDict_SetItem(ret_dict, segment_size_key, segment_size_value)) goto error;
+
+    if((last_segment_size_key = PyString_FromString("last_segment_size\0")) == NULL ||
+       (last_segment_size_value = PyInt_FromLong(last_segment_size)) == NULL ||
+       PyDict_SetItem(ret_dict, last_segment_size_key, last_segment_size_value)) goto error;
+
+    if((fragment_size_key = PyString_FromString("fragment_size\0")) == NULL ||
+       (fragment_size_value = PyInt_FromLong(fragment_size)) == NULL ||
+       PyDict_SetItem(ret_dict, fragment_size_key, fragment_size_value)) goto error;
+
+    if((last_fragment_size_key = PyString_FromString("last_fragment_size\0")) == NULL ||
+       (last_fragment_size_value = PyInt_FromLong(last_fragment_size)) == NULL ||
+        PyDict_SetItem(ret_dict, last_fragment_size_key, last_fragment_size_value)) goto error;
+
+    if((num_segments_key = PyString_FromString("num_segments\0")) == NULL ||
+       (num_segments_value = PyInt_FromLong(num_segments)) == NULL ||
+       PyDict_SetItem(ret_dict, num_segments_key, num_segments_value)) goto error;
   }
-  
-  return ret_dict;
+
+exit:
+    Py_XDECREF(segment_size_key);
+    Py_XDECREF(segment_size_value);
+    Py_XDECREF(last_segment_size_key);
+    Py_XDECREF(last_segment_size_value);
+    Py_XDECREF(fragment_size_key);
+    Py_XDECREF(fragment_size_value);
+    Py_XDECREF(last_fragment_size_key);
+    Py_XDECREF(last_fragment_size_value);
+    Py_XDECREF(num_segments_key);
+    Py_XDECREF(num_segments_value);
+    return ret_dict;
+
+error:
+    // To prevent unexpected call, this is placed after return call
+    pyeclib_c_seterr(-ENOMEM, "pyeclib_c_get_segment_info ERROR: ");
+    Py_XDECREF(ret_dict);
+    ret_dict = NULL;
+    goto exit;
+
 }
 
 
@@ -1189,6 +1253,11 @@ pyeclib_c_check_backend_available(PyObject *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
+static PyObject*
+pyeclib_c_liberasurecode_version(PyObject *self, PyObject *args) {
+    return PyInt_FromLong(LIBERASURECODE_VERSION);
+}
+
 static PyMethodDef PyECLibMethods[] = {
     {"init",  pyeclib_c_init, METH_VARARGS, "Initialize a new erasure encoder/decoder"},
     {"encode",  pyeclib_c_encode, METH_VARARGS, "Create parity using source data"},
@@ -1198,7 +1267,10 @@ static PyMethodDef PyECLibMethods[] = {
     {"get_segment_info", pyeclib_c_get_segment_info, METH_VARARGS, "Return segment and fragment size information needed when encoding a segmented stream"},
     {"get_metadata", pyeclib_c_get_metadata, METH_VARARGS, "Get the integrity checking metadata for a fragment"},
     {"check_metadata", pyeclib_c_check_metadata, METH_VARARGS, "Check the integrity checking metadata for a set of fragments"},
+    {"get_liberasurecode_version", pyeclib_c_liberasurecode_version, METH_NOARGS, "Get libersaurecode version in use"},
+#if ( LIBERASURECODE_VERSION >= _VERSION(1,2,0) )
     {"check_backend_available", pyeclib_c_check_backend_available, METH_VARARGS, "Check if a backend is available"},
+#endif
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
