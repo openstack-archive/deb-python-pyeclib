@@ -1,0 +1,8 @@
+Code-Review+2: Kota Tsuyuzaki <tsuyuzaki.kota@lab.ntt.co.jp>
+Workflow+1: Kota Tsuyuzaki <tsuyuzaki.kota@lab.ntt.co.jp>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sat, 13 Aug 2016 10:52:08 +0000
+Reviewed-on: https://review.openstack.org/323877
+Project: openstack/deb-python-pyeclib
+Branch: refs/heads/master

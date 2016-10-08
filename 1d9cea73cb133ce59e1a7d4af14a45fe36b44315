@@ -1,0 +1,10 @@
+Code-Review+2: Tushar Gohad <tushar.gohad@intel.com>
+Workflow+1: Tushar Gohad <tushar.gohad@intel.com>
+Code-Review+2: Kota Tsuyuzaki <tsuyuzaki.kota@lab.ntt.co.jp>
+Workflow+1: Kota Tsuyuzaki <tsuyuzaki.kota@lab.ntt.co.jp>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 08 Sep 2016 04:37:39 +0000
+Reviewed-on: https://review.openstack.org/341054
+Project: openstack/deb-python-pyeclib
+Branch: refs/heads/master
