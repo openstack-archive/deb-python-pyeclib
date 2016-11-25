@@ -1,3 +1,10 @@
+Team and repository tags
+========================
+
+[![Team and repository tags](http://governance.openstack.org/badges/deb-python-pyeclib.svg)](http://governance.openstack.org/reference/tags/index.html)
+
+<!-- Change things from this point on -->
+
 This library provides a simple Python interface for implementing erasure codes
 and is known to work with Python v2.6, 2.7 and 3.x.
 
