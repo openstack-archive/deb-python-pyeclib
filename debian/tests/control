@@ -21,11 +21,20 @@ Test-Command: python3 debian/tests/encode-decode.py jerasure_rs_vand
 Depends: python3-pyeclib,
          libjerasure2,
 
-# ISA-L
+# ISA-L RS VAND
 Test-Command: python debian/tests/encode-decode.py isa_l_rs_vand
 Depends: python-pyeclib,
          libisal2,
 
 Test-Command: python3 debian/tests/encode-decode.py isa_l_rs_vand
+Depends: python3-pyeclib,
+         libisal2,
+
+# ISA-L RS Cauchy
+Test-Command: python debian/tests/encode-decode.py isa_l_rs_cauchy
+Depends: python-pyeclib,
+         libisal2,
+
+Test-Command: python3 debian/tests/encode-decode.py isa_l_rs_cauchy
 Depends: python3-pyeclib,
          libisal2,

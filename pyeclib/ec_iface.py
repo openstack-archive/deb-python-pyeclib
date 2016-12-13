@@ -28,6 +28,12 @@ from .utils import create_instance
 from .utils import positive_int_value
 from pyeclib_c import get_liberasurecode_version
 
+import logging
+from logging.handlers import SysLogHandler
+logger = logging.getLogger('pyeclib')
+syslog_handler = SysLogHandler()
+logger.addHandler(syslog_handler)
+
 
 def check_backend_available(backend_name):
     try:
@@ -117,6 +123,7 @@ class PyECLib_EC_Types(PyECLibEnum):
     isa_l_rs_vand = 4
     shss = 5
     liberasurecode_rs_vand = 6
+    isa_l_rs_cauchy = 7
 
 
 # Output of Erasure (en)Coding process are data "fragments".  Fragment data
@@ -229,6 +236,14 @@ class ECDriver(object):
             raise ECDriverError(
                 "The following required methods are not implemented "
                 "in %s: %s" % (self.library_import_str, not_implemented_str))
+
+    def __repr__(self):
+        return '%s(ec_type=%r, k=%r, m=%r)' % (
+            type(self).__name__,
+            'flat_xor_hd_%s' % self.hd if self.ec_type.name == 'flat_xor_hd'
+            else self.ec_type.name,
+            self.k,
+            self.m)
 
     def encode(self, data_bytes):
         """
@@ -505,6 +520,7 @@ ALL_EC_TYPES = [
     'isa_l_rs_vand',
     'shss',
     'liberasurecode_rs_vand',
+    'isa_l_rs_cauchy',
 ]
 
 
@@ -527,6 +543,18 @@ def _liberasurecode_version():
     minor = str(int(version_hex_str[-4:-2]))
     rev = str(int(version_hex_str[-2:]))
     version_str = '.'.join([major, minor, rev])
+
+    # liberasurecode < 1.3.1 should be incompatible but
+    # just warn until packagers build the required version
+    # See https://bugs.launchpad.net/swift/+bug/1639691 in detail
+    required_version = ((1 << 16) + (3 << 8) + 1)
+    if version_int < required_version:
+        logger.warning(
+            'DEPRECATED WARNING: your liberasurecode '
+            '%s will be deprecated in the near future because of the issue '
+            'https://bugs.launchpad.net/swift/+bug/1639691; '
+            'Please upgrade to >=1.3.1 and rebuild pyeclib to suppress '
+            'this message' % version_str)
     return version_str
 
 LIBERASURECODE_VERSION = _liberasurecode_version()

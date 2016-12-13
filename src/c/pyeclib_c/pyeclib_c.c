@@ -1004,6 +1004,9 @@ static const char* backend_id_to_str(uint8_t backend_id)
     case 6:
       backend_id_str = "liberasurecode_rs_vand\0";
       break;
+    case 7:
+      backend_id_str = "isa_l_rs_cauchy\0";
+      break;
     default:
       backend_id_str = "unknown\0";
   }
@@ -1030,66 +1033,25 @@ hex_encode_string(char *buf, uint32_t buf_len)
 static PyObject*
 fragment_metadata_to_dict(fragment_metadata_t *fragment_metadata)
 {
-  PyObject* metadata_dict = NULL;
-  metadata_dict = PyDict_New();
-
+  const char *chksum_type_str = chksum_type_to_str(fragment_metadata->chksum_type);
+  char *encoded_chksum = hex_encode_string((char*)fragment_metadata->chksum, 
+                                            chksum_length(fragment_metadata->chksum_type));
+  const char *backend_id_str = backend_id_to_str(fragment_metadata->backend_id);
+  PyObject* metadata_dict = Py_BuildValue(
+    "{s:k, s:k, s:K, s:s, s:s, s:B, s:s, s:k}",
+    "index", fragment_metadata->idx,
+    "size", fragment_metadata->size,
+    "orig_data_size", fragment_metadata->orig_data_size,
+    "chksum_type", chksum_type_str,
+    "chksum", encoded_chksum,
+    "chksum_mismatch", fragment_metadata->chksum_mismatch,
+    "backend_id", backend_id_str,
+    "backend_version", fragment_metadata->backend_version);
+  encoded_chksum = check_and_free_buffer(encoded_chksum);
   if (metadata_dict == NULL) {
     pyeclib_c_seterr(-ENOMEM, "fragment_metadata_to_dict ERROR: ");
     return NULL;
   }
-
-  if (PyDict_SetItemString(metadata_dict, "index", 
-      PyLong_FromLong((unsigned long)fragment_metadata->idx)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict index ERROR: ");
-    return NULL;
-  }
-  
-  if (PyDict_SetItemString(metadata_dict, "size", 
-      PyLong_FromLong(fragment_metadata->size)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict size ERROR: ");
-    return NULL;
-  }
-  
-  if (PyDict_SetItemString(metadata_dict, "orig_data_size", 
-      PyLong_FromLong(fragment_metadata->orig_data_size)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict orig_data_size ERROR: ");
-    return NULL;
-  }
-  
-  const char *chksum_type_str = chksum_type_to_str(fragment_metadata->chksum_type); 
-  if (PyDict_SetItemString(metadata_dict, "chksum_type", 
-      PyString_FromString(chksum_type_str)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict chksum_type ERROR: ");
-    return NULL;
-  }
-
-  char *encoded_chksum = hex_encode_string((char*)fragment_metadata->chksum, 
-                                            chksum_length(fragment_metadata->chksum_type));
-  if (PyDict_SetItemString(metadata_dict, "chksum", 
-      PyString_FromString(encoded_chksum)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict chksum ERROR: ");
-    return NULL;
-  }
-  
-  if (PyDict_SetItemString(metadata_dict, "chksum_mismatch", 
-      PyLong_FromLong((unsigned long)fragment_metadata->chksum_mismatch)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict chksum_mismatch ERROR: ");
-    return NULL;
-  }
-  
-  const char *backend_id_str = backend_id_to_str(fragment_metadata->backend_id);
-  if (PyDict_SetItemString(metadata_dict, "backend_id", 
-      PyString_FromString(backend_id_str)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict backend_id ERROR: ");
-    return NULL;
-  }
-  
-  if (PyDict_SetItemString(metadata_dict, "backend_version", 
-    PyLong_FromLong((unsigned long)fragment_metadata->backend_version)) < 0) {
-    pyeclib_c_seterr(-EINVALIDPARAMS, "fragment_metadata_to_dict backend_version ERROR: ");
-    return NULL;
-  }
-
   return metadata_dict;
 }
 

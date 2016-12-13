@@ -21,6 +21,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import os
 import random
 from string import ascii_letters, ascii_uppercase, digits
 import sys
@@ -28,6 +29,7 @@ import tempfile
 import unittest
 
 from distutils.version import StrictVersion
+from itertools import combinations
 
 from pyeclib.ec_iface import ECBackendNotSupported
 from pyeclib.ec_iface import ECDriver
@@ -152,11 +154,11 @@ class TestPyECLibDriver(unittest.TestCase):
                     _m = 4
                 else:
                     _m = 5
-                driver = ECDriver(k=10, m=_m, ec_type=_type, validate=True)
+                ECDriver(k=10, m=_m, ec_type=_type, validate=True)
                 available_ec_types.append(_type)
-            except Exception as e:
+            except Exception:
                 # ignore any errors, assume backend not available
-                continue
+                pass
         self.assertEqual(available_ec_types, VALID_EC_TYPES)
 
     def test_valid_algo(self):
@@ -182,42 +184,65 @@ class TestPyECLibDriver(unittest.TestCase):
         _type1 = 'jerasure_rs_vand'
         if _type1 in VALID_EC_TYPES:
             pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type=_type1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=11, m=2, ec_type=_type1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=10, m=2, ec_type=_type1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=8, m=4, ec_type=_type1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
         _type2 = 'liberasurecode_rs_vand'
         if _type2 in VALID_EC_TYPES:
             pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type=_type2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=11, m=2, ec_type=_type2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=10, m=2, ec_type=_type2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=8, m=4, ec_type=_type2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
         _type3_1 = 'flat_xor_hd'
         if _type3_1 in VALID_EC_TYPES:
             pyeclib_drivers.append(ECDriver(k=12, m=6, ec_type=_type3_1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=_type3_1,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
         _type3_2 = 'flat_xor_hd_4'
         if _type3_2 in VALID_EC_TYPES:
             pyeclib_drivers.append(ECDriver(k=12, m=6, ec_type=_type3_2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=10, m=5, ec_type=_type3_2,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
         _type4 = 'shss'
         if _type4 in VALID_EC_TYPES:
             pyeclib_drivers.append(ECDriver(k=10, m=4, ec_type=_type4,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=20, m=4, ec_type=_type4,
-                                   chksum_type=csum))
+                                            chksum_type=csum))
             pyeclib_drivers.append(ECDriver(k=11, m=7, ec_type=_type4,
+                                            chksum_type=csum))
+
+        _type5 = 'isa_l_rs_vand'
+        if _type5 in VALID_EC_TYPES:
+            pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type=_type5,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=11, m=2, ec_type=_type5,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=10, m=2, ec_type=_type5,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=8, m=4, ec_type=_type5,
+                                   chksum_type=csum))
+        _type6 = 'isa_l_rs_cauchy'
+        if _type6 in VALID_EC_TYPES:
+            pyeclib_drivers.append(ECDriver(k=12, m=2, ec_type=_type6,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=11, m=2, ec_type=_type6,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=10, m=2, ec_type=_type6,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=8, m=4, ec_type=_type6,
+                                   chksum_type=csum))
+            pyeclib_drivers.append(ECDriver(k=11, m=7, ec_type=_type6,
                                    chksum_type=csum))
         return pyeclib_drivers
 
@@ -232,67 +257,45 @@ class TestPyECLibDriver(unittest.TestCase):
 
                 self.assertTrue(decoded_str == encode_str)
 
-#    def disabled_test_verify_fragment_algsig_chksum_fail(self):
-#        pyeclib_drivers = []
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=2, ec_type="jerasure_rs_vand", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=3, ec_type="jerasure_rs_vand", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=6, ec_type="flat_xor_hd", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=10, m=5, ec_type="flat_xor_hd", chksum_type="algsig"))
-#
-#        filesize = 1024 * 1024 * 3
-#        file_str = ''.join(random.choice(ascii_letters) for i in range(filesize))
-#        file_bytes = file_str.encode('utf-8')
-#
-#        fragment_to_corrupt = random.randint(0, 12)
-#
-#        for pyeclib_driver in pyeclib_drivers:
-#            fragments = pyeclib_driver.encode(file_bytes)
-#            fragment_metadata_list = []
-#
-#            i = 0
-#            for fragment in fragments:
-#                if i == fragment_to_corrupt:
-#                    corrupted_fragment = fragment[:100] +\
-#                        (str(chr((b2i(fragment[100]) + 0x1)
-#                                 % 0xff))).encode('utf-8') + fragment[101:]
-#                    fragment_metadata_list.append(pyeclib_driver.get_metadata(corrupted_fragment))
-#                else:
-#                    fragment_metadata_list.append(pyeclib_driver.get_metadata(fragment))
-#                i += 1
-#
-#            self.assertTrue(pyeclib_driver.verify_stripe_metadata(fragment_metadata_list) != -1)
-#
-#    def disabled_test_verify_fragment_inline_succeed(self):
-#        pyeclib_drivers = []
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=2, ec_type="jerasure_rs_vand", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=3, ec_type="jerasure_rs_vand", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=12, m=6, ec_type="flat_xor_hd", chksum_type="algsig"))
-#        pyeclib_drivers.append(
-#            ECDriver(k=10, m=5, ec_type="flat_xor_hd", chksum_type="algsig"))
-#
-#        filesize = 1024 * 1024 * 3
-#        file_str = ''.join(random.choice(ascii_letters) for i in range(filesize))
-#        file_bytes = file_str.encode('utf-8')
-#
-#        for pyeclib_driver in pyeclib_drivers:
-#            fragments = pyeclib_driver.encode(file_bytes)
-#
-#            fragment_metadata_list = []
-#
-#            for fragment in fragments:
-#                fragment_metadata_list.append(
-#                    pyeclib_driver.get_metadata(fragment))
-#
-#            self.assertTrue(
-#                pyeclib_driver.verify_stripe_metadata(fragment_metadata_list) == -1)
-#
+    def test_decode_reconstruct_with_fragment_iterator(self):
+        pyeclib_drivers = self.get_pyeclib_testspec()
+        encode_strs = [b"a", b"hello", b"hellohyhi", b"yo"]
+
+        for pyeclib_driver in pyeclib_drivers:
+            for encode_str in encode_strs:
+                encoded_fragments = pyeclib_driver.encode(encode_str)
+
+                idxs_to_remove = random.sample(range(
+                    pyeclib_driver.k + pyeclib_driver.m), 2)
+                available_fragments = encoded_fragments[:]
+                for i in sorted(idxs_to_remove, reverse=True):
+                    available_fragments.pop(i)
+
+                frag_iter = iter(available_fragments)
+                decoded_str = pyeclib_driver.decode(frag_iter)
+                self.assertEqual(decoded_str, encode_str)
+
+                # Since the iterator is exhausted, we can't decode again
+                with self.assertRaises(ECDriverError) as exc_mgr:
+                    pyeclib_driver.decode(frag_iter)
+                self.assertEqual(
+                    'Invalid fragment payload in ECPyECLibDriver.decode',
+                    str(exc_mgr.exception))
+
+                frag_iter = iter(available_fragments)
+                reconstructed_fragments = pyeclib_driver.reconstruct(
+                    frag_iter, idxs_to_remove)
+                self.assertEqual(len(reconstructed_fragments),
+                                 len(idxs_to_remove))
+                for i, data in zip(idxs_to_remove, reconstructed_fragments):
+                    self.assertEqual(data, encoded_fragments[i])
+
+                # Since the iterator is exhausted, we can't decode again
+                with self.assertRaises(ECDriverError) as exc_mgr:
+                    pyeclib_driver.reconstruct(frag_iter, idxs_to_remove)
+                self.assertEqual(
+                    'Invalid fragment payload in ECPyECLibDriver.reconstruct',
+                    str(exc_mgr.exception))
 
     def check_metadata_formatted(self, k, m, ec_type, chksum_type):
 
@@ -359,7 +362,8 @@ class TestPyECLibDriver(unittest.TestCase):
     def test_verify_fragment_inline_chksum_fail(self):
         pyeclib_drivers = self.get_pyeclib_testspec("inline_crc32")
         filesize = 1024 * 1024 * 3
-        file_str = ''.join(random.choice(ascii_letters) for i in range(filesize))
+        file_str = ''.join(random.choice(ascii_letters)
+                           for i in range(filesize))
         file_bytes = file_str.encode('utf-8')
 
         for pyeclib_driver in pyeclib_drivers:
@@ -370,8 +374,8 @@ class TestPyECLibDriver(unittest.TestCase):
             first_fragment_to_corrupt = random.randint(0, len(fragments))
             num_to_corrupt = 2
             fragments_to_corrupt = [
-              (first_fragment_to_corrupt + i) % len(fragments) for i in range(num_to_corrupt + 1)
-            ]
+                (first_fragment_to_corrupt + i) % len(fragments)
+                for i in range(num_to_corrupt + 1)]
             fragments_to_corrupt.sort()
 
             i = 0
@@ -387,8 +391,8 @@ class TestPyECLibDriver(unittest.TestCase):
                         pyeclib_driver.get_metadata(fragment))
                 i += 1
 
-            expected_ret_value = {"status": -206, 
-                                  "reason": "Bad checksum", 
+            expected_ret_value = {"status": -206,
+                                  "reason": "Bad checksum",
                                   "bad_fragments": fragments_to_corrupt}
             self.assertEqual(
                 pyeclib_driver.verify_stripe_metadata(fragment_metadata_list),
@@ -398,7 +402,8 @@ class TestPyECLibDriver(unittest.TestCase):
         pyeclib_drivers = self.get_pyeclib_testspec("inline_crc32")
 
         filesize = 1024 * 1024 * 3
-        file_str = ''.join(random.choice(ascii_letters) for i in range(filesize))
+        file_str = ''.join(random.choice(ascii_letters)
+                           for i in range(filesize))
         file_bytes = file_str.encode('utf-8')
 
         for pyeclib_driver in pyeclib_drivers:
@@ -410,10 +415,10 @@ class TestPyECLibDriver(unittest.TestCase):
                 fragment_metadata_list.append(
                     pyeclib_driver.get_metadata(fragment))
 
-            expected_ret_value = {"status": 0 }
+            expected_ret_value = {"status": 0}
 
-            self.assertTrue(
-                pyeclib_driver.verify_stripe_metadata(fragment_metadata_list) == expected_ret_value)
+            self.assertTrue(pyeclib_driver.verify_stripe_metadata(
+                fragment_metadata_list) == expected_ret_value)
 
     def test_get_segment_byterange_info(self):
         pyeclib_drivers = self.get_pyeclib_testspec()
@@ -423,26 +428,42 @@ class TestPyECLibDriver(unittest.TestCase):
         file_size = 1024 * 1024
         segment_size = 3 * 1024
 
-        ranges = [(0, 1), (1, 12), (10, 1000), (0, segment_size-1), (1, segment_size+1), (segment_size-1, 2*segment_size)]
+        ranges = [
+            (0, 1),
+            (1, 12),
+            (10, 1000),
+            (0, segment_size - 1),
+            (1, segment_size + 1),
+            (segment_size - 1, 2 * segment_size)]
 
         expected_results = {}
 
         expected_results[(0, 1)] = {0: (0, 1)}
         expected_results[(1, 12)] = {0: (1, 12)}
         expected_results[(10, 1000)] = {0: (10, 1000)}
-        expected_results[(0, segment_size-1)] = {0: (0, segment_size-1)}
-        expected_results[(1, segment_size+1)] = {0: (1, segment_size-1), 1: (0, 1)}
-        expected_results[(segment_size-1, 2*segment_size)] = {0: (segment_size-1, segment_size-1), 1: (0, segment_size-1), 2: (0, 0)}
+        expected_results[(0, segment_size - 1)] = {0: (0, segment_size - 1)}
+        expected_results[(1, segment_size + 1)
+                         ] = {0: (1, segment_size - 1), 1: (0, 1)}
+        expected_results[
+            (segment_size - 1, 2 * segment_size)] = {
+            0: (segment_size - 1, segment_size - 1),
+            1: (0, segment_size - 1),
+            2: (0, 0)}
 
-        results = pyeclib_drivers[0].get_segment_info_byterange(ranges, file_size, segment_size)
+        results = pyeclib_drivers[0].get_segment_info_byterange(
+            ranges, file_size, segment_size)
 
         for exp_result_key in expected_results:
             self.assertIn(exp_result_key, results)
-            self.assertTrue(len(results[exp_result_key]) == len(expected_results[exp_result_key]))
+            self.assertTrue(
+                len(results[exp_result_key]) ==
+                len(expected_results[exp_result_key]))
             exp_result_map = expected_results[exp_result_key]
             for segment_key in exp_result_map:
                 self.assertIn(segment_key, results[exp_result_key])
-                self.assertTrue(results[exp_result_key][segment_key] == expected_results[exp_result_key][segment_key])
+                self.assertTrue(
+                    results[exp_result_key][segment_key] ==
+                    expected_results[exp_result_key][segment_key])
 
     def test_get_segment_info(self):
         pyeclib_drivers = self.get_pyeclib_testspec()
@@ -462,8 +483,8 @@ class TestPyECLibDriver(unittest.TestCase):
         #
         char_set = ascii_uppercase + digits
         for segment_size in segment_sizes:
-            segment_strings[segment_size] = \
-                ''.join(random.choice(char_set) for i in range(segment_size * 2))
+            segment_strings[segment_size] = ''.join(
+                random.choice(char_set) for i in range(segment_size * 2))
 
         for pyeclib_driver in pyeclib_drivers:
             for file_size in file_sizes:
@@ -510,6 +531,46 @@ class TestPyECLibDriver(unittest.TestCase):
                             last_fragment_size == len(
                                 encoded_fragments[0]))
 
+    def test_greedy_decode_reconstruct_combination(self):
+        # the testing spec defined at get_pyeclib_testspec() method
+        # and if you want to test either other parameters or backends,
+        # you can add the spec you want to test there.
+        pyeclib_drivers = self.get_pyeclib_testspec()
+        orig_data = os.urandom(1024 ** 2)
+        for pyeclib_driver in pyeclib_drivers:
+            encoded = pyeclib_driver.encode(orig_data)
+            # make all fragment like (index, frag_data) format to feed
+            # to combinations
+            frags = [(i, frag) for i, frag in enumerate(encoded)]
+            num_frags = pyeclib_driver.k + pyeclib_driver.m
+
+            if pyeclib_driver.ec_type == PyECLib_EC_Types.flat_xor_hd:
+                # flat_xord_hd is guaranteed to work with 2 or 3 failures
+                tolerable_failures = pyeclib_driver.hd - 1
+            else:
+                # ... while others can tolerate more
+                tolerable_failures = pyeclib_driver.m
+
+            for check_frags_tuples in combinations(
+                    frags, num_frags - tolerable_failures):
+                # extract check_frags_tuples from [(index, data bytes), ...]
+                # to [index, index, ...] and [data bytes, data bytes, ...]
+                indexes, check_frags = zip(*check_frags_tuples)
+                decoded = pyeclib_driver.decode(check_frags)
+                self.assertEqual(
+                    orig_data, decoded,
+                    "assertion fail in decode %s from:%s" %
+                    (pyeclib_driver, indexes))
+                holes = [index for index in range(num_frags) if
+                         index not in indexes]
+                for hole in holes:
+                    reconed = pyeclib_driver.reconstruct(
+                        check_frags, [hole])[0]
+                    self.assertEqual(
+                        frags[hole][1], reconed,
+                        "assertion fail in reconstruct %s target:%s "
+                        "from:%s" % (pyeclib_driver, hole, indexes))
+
     def test_rs(self):
         pyeclib_drivers = self.get_pyeclib_testspec()
 
@@ -524,25 +585,20 @@ class TestPyECLibDriver(unittest.TestCase):
 
                 for iter in range(self.num_iterations):
                     num_missing = 2
-                    idxs_to_remove = []
+                    idxs_to_remove = random.sample(range(
+                        pyeclib_driver.k + pyeclib_driver.m), num_missing)
                     fragments = orig_fragments[:]
-                    for j in range(num_missing):
-                        idx = random.randint(0, (pyeclib_driver.k +
-                                                 pyeclib_driver.m - 1))
-                        if idx not in idxs_to_remove:
-                            idxs_to_remove.append(idx)
 
                     # Reverse sort the list, so we can always
                     # remove from the original index
-                    idxs_to_remove.sort(key=int, reverse=True)
+                    idxs_to_remove.sort(reverse=True)
                     for idx in idxs_to_remove:
                         fragments.pop(idx)
 
                     #
-                    # Test decoder (send copy, because we want to re-use
-                    # fragments for reconstruction)
+                    # Test decoder
                     #
-                    decoded_string = pyeclib_driver.decode(fragments[:])
+                    decoded_string = pyeclib_driver.decode(fragments)
 
                     self.assertTrue(encode_input == decoded_string)
 
@@ -552,18 +608,23 @@ class TestPyECLibDriver(unittest.TestCase):
                     reconstructed_fragments = pyeclib_driver.reconstruct(
                         fragments,
                         idxs_to_remove)
-                    self.assertTrue(
-                        reconstructed_fragments[0] == orig_fragments[
-                            idxs_to_remove[0]])
+                    self.assertEqual(len(reconstructed_fragments),
+                                     len(idxs_to_remove))
+                    for idx, frag_data in zip(idxs_to_remove,
+                                              reconstructed_fragments):
+                        self.assertEqual(
+                            frag_data, orig_fragments[idx],
+                            'Failed to reconstruct fragment %d!' % idx)
 
                     #
                     # Test decode with integrity checks
                     #
-                    first_fragment_to_corrupt = random.randint(0, len(fragments))
+                    first_fragment_to_corrupt = random.randint(
+                        0, len(fragments))
                     num_to_corrupt = min(len(fragments), pyeclib_driver.m + 1)
                     fragments_to_corrupt = [
-                      (first_fragment_to_corrupt + i) % len(fragments) for i in range(num_to_corrupt)
-                    ]
+                        (first_fragment_to_corrupt + i) % len(fragments)
+                        for i in range(num_to_corrupt)]
 
                     if StrictVersion(LIBERASURECODE_VERSION) < \
                             StrictVersion('1.2.0'):
@@ -572,14 +633,15 @@ class TestPyECLibDriver(unittest.TestCase):
                         continue
                     i = 0
                     for fragment in fragments:
-                      if i in fragments_to_corrupt:
-                        corrupted_fragment = ("0" * len(fragment)).encode('utf-8')
-                        fragments[i] = corrupted_fragment
-                      i += 1
+                        if i in fragments_to_corrupt:
+                            corrupted_fragment = (
+                                "0" * len(fragment)).encode('utf-8')
+                            fragments[i] = corrupted_fragment
+                        i += 1
 
                     self.assertRaises(ECInvalidFragmentMetadata,
                                       pyeclib_driver.decode,
-                                      fragments[:], force_metadata_checks=True)
+                                      fragments, force_metadata_checks=True)
 
     def get_available_backend(self, k, m, ec_type, chksum_type="inline_crc32"):
         if ec_type[:11] == "flat_xor_hd":
@@ -612,14 +674,25 @@ class TestPyECLibDriver(unittest.TestCase):
                 self.assertTrue(
                     pyeclib_drivers[0].min_parity_fragments_needed() == 1)
 
+    def test_pyeclib_driver_repr_expression(self):
+        pyeclib_drivers = self.get_pyeclib_testspec()
+        for driver in pyeclib_drivers:
+            if driver.ec_type.name == 'flat_xor_hd':
+                name = 'flat_xor_hd_%s' % driver.hd
+            else:
+                name = driver.ec_type.name
+
+            self.assertEqual(
+                "ECDriver(ec_type='%s', k=%s, m=%s)" %
+                (name, driver.k, driver.m), repr(driver))
+
     def test_get_segment_info_memory_usage(self):
         for ec_driver in self.get_pyeclib_testspec():
             self._test_get_segment_info_memory_usage(ec_driver)
 
     def _test_get_segment_info_memory_usage(self, ec_driver):
         # 1. Preapre the expected memory allocation
-        info = ec_driver.get_segment_info(1024*1024, 1024*1024)
-        info = None
+        ec_driver.get_segment_info(1024 * 1024, 1024 * 1024)
         loop_range = range(1000)
 
         # 2. Get current memory usage
@@ -627,12 +700,51 @@ class TestPyECLibDriver(unittest.TestCase):
 
         # 3. Loop to call get_segment_info
         for x in loop_range:
-            ec_driver.get_segment_info(1024*1024, 1024*1024)
+            ec_driver.get_segment_info(1024 * 1024, 1024 * 1024)
 
         # 4. memory usage shoudln't be increased
         self.assertEqual(usage, resource.getrusage(resource.RUSAGE_SELF)[2],
                          'Memory usage is increased unexpectedly %s - %s' %
                          (usage, resource.getrusage(resource.RUSAGE_SELF)[2]))
+
+    def test_get_metadata_memory_usage(self):
+        for ec_driver in self.get_pyeclib_testspec():
+            self._test_get_metadata_memory_usage(ec_driver)
+
+    def _test_get_metadata_memory_usage(self, ec_driver):
+        # 1. Prepare the expected memory allocation
+        encoded = ec_driver.encode(b'aaa')
+        ec_driver.get_metadata(encoded[0], formatted=True)
+        loop_range = range(400000)
+
+        # 2. Get current memory usage
+        baseline_usage = resource.getrusage(resource.RUSAGE_SELF)[2]
+
+        # 3. Loop to call get_metadata
+        for x in loop_range:
+            ec_driver.get_metadata(encoded[0], formatted=True)
+
+        # 4. memory usage shouldn't increase
+        new_usage = resource.getrusage(resource.RUSAGE_SELF)[2]
+        self.assertEqual(baseline_usage, new_usage,
+                         'Memory usage is increased unexpectedly %s -> %s' %
+                         (baseline_usage, new_usage))
+
+
+class TestBackendsEnabled(unittest.TestCase):
+    '''Based on TestPyECLibDriver.test_valid_algo above, but these tests
+       should *always* either pass or skip.'''
+    class __metaclass__(type):
+        def __new__(meta, cls_name, cls_bases, cls_dict):
+            for ec_type in ALL_EC_TYPES:
+                def dummy(self, ec_type=ec_type):
+                    if ec_type not in VALID_EC_TYPES:
+                        raise unittest.SkipTest
+                    k, m = 10, 4 if ec_type == 'shss' else 5
+                    ECDriver(k=k, m=m, ec_type=ec_type)
+                dummy.__name__ = 'test_%s_available' % ec_type
+                cls_dict[dummy.__name__] = dummy
+            return type.__new__(meta, cls_name, cls_bases, cls_dict)
 
 
 if __name__ == '__main__':
