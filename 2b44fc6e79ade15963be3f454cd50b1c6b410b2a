@@ -1,0 +1,8 @@
+Code-Review+2: Ondřej Nový <novy@ondrej.org>
+Workflow+1: Ondřej Nový <novy@ondrej.org>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Sun, 25 Dec 2016 20:15:56 +0000
+Reviewed-on: https://review.openstack.org/414771
+Project: openstack/deb-python-pyeclib
+Branch: refs/heads/debian/newton
