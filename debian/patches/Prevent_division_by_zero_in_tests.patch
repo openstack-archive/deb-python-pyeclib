@@ -1,0 +1,29 @@
+From ee6e409d835f2ca4a3e0c7757761a8f2ebd680ed Mon Sep 17 00:00:00 2001
+From: Ondřej Nový <ondrej.novy@firma.seznam.cz>
+Date: Thu, 15 Dec 2016 16:37:14 +0100
+Subject: [PATCH] Prevent division by zero in tests
+
+If avg_time is 0, tests will fail:
+throughput = (size / 1000.0) / avg_time
+ZeroDivisionError: float division by zero
+
+This happens for me on Hurd:
+https://buildd.debian.org/status/fetch.php?pkg=python-pyeclib&arch=hurd-i386&ver=1.3.1-1&stamp=1475967332
+
+Change-Id: I0a7812977173b37918f40891f6ec0a2bc7c1d023
+---
+
+diff --git a/test/test_pyeclib_c.py b/test/test_pyeclib_c.py
+index 1e44214..0395e21 100644
+--- a/test/test_pyeclib_c.py
++++ b/test/test_pyeclib_c.py
+@@ -289,6 +289,9 @@
+         size_desc = size_str.split("-")
+         size = float(size_desc[0])
+ 
++        if avg_time == 0:
++            return '?'
++
+         if size_desc[1] == 'M':
+             throughput = size / avg_time
+         elif size_desc[1] == 'K':
