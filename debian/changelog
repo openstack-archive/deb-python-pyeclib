@@ -1,3 +1,9 @@
+python-pyeclib (1.4.0-2~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Ondřej Nový <onovy@debian.org>  Tue, 21 Feb 2017 12:40:12 +0100
+
 python-pyeclib (1.4.0-2) unstable; urgency=medium
 
   * Prevent division by zero in tests (patch from upstream)
